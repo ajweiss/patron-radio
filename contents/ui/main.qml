@@ -16,6 +16,10 @@ PlasmoidItem {
     readonly property int stateFixing: 4
     readonly property int stateLocating: 5
     property int playbackState: stateStopped
+    // Rebuild the context menu on every state change so the playback action
+    // reflects the current state (e.g. "Fix Broken Stream" once a stream
+    // breaks). The menu is a static list, so it only updates when we ask it to.
+    onPlaybackStateChanged: contextActions.update()
 
     // Computed aliases for child QML files
     readonly property bool isPlaying: playbackState === statePlaying
