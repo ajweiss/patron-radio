@@ -1,0 +1,30 @@
+# Build artifacts
+build/
+bin/
+*.so
+*.o
+*.a
+Makefile
+cmake_install.cmake
+CMakeCache.txt
+CMakeFiles/
+
+# Qt/KDE generated files
+*_autogen/
+moc_*.cpp
+*.moc
+ui_*.h
+qrc_*.cpp
+
+# Editor/OS temporary files
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+
+# Development logs
+*.log
+trace.log
+viewer_log.txt
+bt_pid.txt

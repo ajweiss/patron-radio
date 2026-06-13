@@ -1,0 +1,12 @@
+{
+    "Id": "com.signal11.patronradio",
+    "MetaData": {
+        "Directories": [ {
+            "Path": ".",
+            "Priority": 1
+        } ],
+        "Uri": "com.signal11.patronradio"
+    },
+    "Type": "QQmlExtensionPlugin",
+    "Version": 100
+}

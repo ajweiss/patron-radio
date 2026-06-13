@@ -1,0 +1,20 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "adam@signal11.com",
+                "Name": "Adam Weiss"
+            }
+        ],
+        "Category": "Multimedia",
+        "Description": "A compact panel widget for streaming a curated set of global independent and public radio stations.",
+        "Icon": "radio",
+        "Id": "com.signal11.patronradio",
+        "License": "GPL-3.0+",
+        "Name": "Patron Radio",
+        "Version": "0.7"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "ui/main.qml",
+    "KPackageStructure": "Plasma/Applet"
+}
