@@ -12,7 +12,8 @@
         "Id": "com.signal11.patronradio",
         "License": "GPL-3.0+",
         "Name": "Patron Radio",
-        "Version": "0.7"
+        "Version": "0.8",
+        "Website": "https://github.com/ajweiss/patron-radio"
     },
     "X-Plasma-API-Minimum-Version": "6.0",
     "X-Plasma-MainScript": "ui/main.qml",
