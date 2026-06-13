@@ -23,14 +23,7 @@ RadioBackend::RadioBackend(QObject *parent)
 
     m_stallTimer.setSingleShot(true);
     connect(&m_stallTimer, &QTimer::timeout, this, [this]() {
-        // A persistent stall means the current pre-roll is too thin for this
-        // stream, so grow it before retrying; the next start() uses m_prerollMs.
-        if (m_prerollMs < PREROLL_MAX_MS) {
-            m_prerollMs = qMin(m_prerollMs * 2, PREROLL_MAX_MS);
-            qDebug() << "Playback stalled; escalating pre-roll to" << m_prerollMs << "ms and reconnecting";
-        } else {
-            qDebug() << "Playback stalled at max pre-roll; reconnecting";
-        }
+        qDebug() << "Playback stalled past timeout; forcing reconnect";
         // Route recovery through scheduleReconnect so it inherits the backoff
         // and attempt cap and can't spin forever.
         scheduleReconnect();
@@ -214,7 +207,6 @@ void RadioBackend::setCurrentUrl(const QString &url)
         // synchronously joins that worker — deadlocks the GUI thread. (This is
         // why stop() and attemptReconnect() also stop the reader before the player.)
         m_stallTimer.stop();
-        m_prerollMs = PREROLL_INITIAL_MS; // new station: start thin again
         m_icyReader->stop();
         m_player->stop();
         m_player->setSource(QUrl());
@@ -237,7 +229,7 @@ void RadioBackend::setCurrentUrl(const QString &url)
             Q_EMIT bufferingChanged();
         }
 
-        m_icyReader->start(QUrl(url), m_prerollMs);
+        m_icyReader->start(QUrl(url));
         Q_EMIT currentUrlChanged();
     }
 }
@@ -249,7 +241,7 @@ void RadioBackend::play() {
             m_buffering = true;
             Q_EMIT bufferingChanged();
         }
-        m_icyReader->start(QUrl(m_currentUrl), m_prerollMs);
+        m_icyReader->start(QUrl(m_currentUrl));
     } else {
         m_player->play();
     }
@@ -264,7 +256,6 @@ void RadioBackend::stop() {
     m_stallTimer.stop();
     m_reconnectDelay = 0;
     m_reconnectAttempts = 0;
-    m_prerollMs = PREROLL_INITIAL_MS; // fresh start next time
     m_icyReader->stop();
     m_player->stop();
     m_player->setSource(QUrl()); // clear stale source so next setSourceDevice is a fresh start
@@ -450,7 +441,7 @@ void RadioBackend::attemptReconnect()
         m_buffering = true;
         Q_EMIT bufferingChanged();
     }
-    m_icyReader->start(QUrl(m_currentUrl), m_prerollMs);
+    m_icyReader->start(QUrl(m_currentUrl));
 }
 
 void RadioBackend::emitMprisPropertiesChanged(const QString &interface, const QVariantMap &changedProperties)

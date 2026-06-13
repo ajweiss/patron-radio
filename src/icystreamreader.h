@@ -17,10 +17,7 @@ public:
     explicit IcyStreamReader(QObject *parent = nullptr);
     ~IcyStreamReader();
 
-    // targetMs is the desired pre-roll duration before playback begins; pass 0
-    // to use the default. Larger values trade start-up latency for underrun
-    // resilience (see RadioBackend's escalating retry).
-    void start(const QUrl &url, int targetMs = 0);
+    void start(const QUrl &url);
     void stop();
     bool isActive() const { return m_reply != nullptr; }
 
@@ -62,7 +59,6 @@ private:
     int m_metaBytesLeft;
     bool m_readyToPlayEmitted;
     int m_readyThreshold;   // bytes of audio to pre-buffer before play; from icy-br or fallback
-    int m_targetMs;         // desired pre-roll duration; set per start()
 
     enum State { StateAudio, StateMetaLength, StateMetaData } m_state;
     QByteArray m_metaBuffer;
