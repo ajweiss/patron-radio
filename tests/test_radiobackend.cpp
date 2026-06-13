@@ -239,8 +239,10 @@ private Q_SLOTS:
         QCOMPARE(b.CanPause(), true);
         QCOMPARE(b.CanSeek(), false);
         QCOMPARE(b.CanControl(), true);
-        QCOMPARE(b.CanGoNext(), false);
-        QCOMPARE(b.CanGoPrevious(), false);
+        // The backend supports station switching: Next()/Previous() emit
+        // nextRequested/previousRequested, which the UI handles to cycle stations.
+        QCOMPARE(b.CanGoNext(), true);
+        QCOMPARE(b.CanGoPrevious(), true);
         QCOMPARE(b.Position(), (qlonglong)0);
         QCOMPARE(b.Rate(), 1.0);
         QCOMPARE(b.LoopStatus(), QStringLiteral("None"));
