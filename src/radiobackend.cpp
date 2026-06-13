@@ -6,6 +6,10 @@
 #include <QDBusUnixFileDescriptor>
 #include <QMediaMetaData>
 #include <QRandomGenerator>
+#include <QAudioBufferOutput>
+#include <QAudioBuffer>
+#include <cmath>
+#include <ebur128.h>
 
 #include "mprisrootadaptor.h"
 #include "mprisplayeradaptor.h"
@@ -17,6 +21,16 @@ RadioBackend::RadioBackend(QObject *parent)
       m_icyReader(new IcyStreamReader(this))
 {
     m_player->setAudioOutput(m_audioOutput);
+
+    // Tap decoded PCM for loudness measurement (analysis only; audio still plays
+    // through m_audioOutput). Buffers arrive on this (the GUI) thread.
+    m_audioBufferOutput = new QAudioBufferOutput(this);
+    m_player->setAudioBufferOutput(m_audioBufferOutput);
+    connect(m_audioBufferOutput, &QAudioBufferOutput::audioBufferReceived,
+            this, &RadioBackend::onAudioBuffer);
+    m_loudnessTimer.setInterval(LOUDNESS_TICK_MS);
+    connect(&m_loudnessTimer, &QTimer::timeout, this, &RadioBackend::updateNormalizationGain);
+    m_loudnessTimer.start();
 
     m_reconnectTimer.setSingleShot(true);
     connect(&m_reconnectTimer, &QTimer::timeout, this, &RadioBackend::attemptReconnect);
@@ -48,7 +62,7 @@ RadioBackend::RadioBackend(QObject *parent)
                 m_stallTimer.stop();
                 m_reconnectDelay = 0;
                 m_reconnectAttempts = 0;
-                m_audioOutput->setVolume(m_volume);
+                applyEffectiveVolume();
                 if (!m_lastError.isEmpty()) {
                     m_lastError.clear();
                     Q_EMIT lastErrorChanged();
@@ -58,7 +72,7 @@ RadioBackend::RadioBackend(QObject *parent)
                 takeSleepInhibitLock();
             else if (!m_playing) {
                 releaseSleepInhibitLock();
-                m_audioOutput->setVolume(m_volume);
+                applyEffectiveVolume();
             }
             Q_EMIT playingChanged();
             Q_EMIT bufferingChanged(); // Re-evaluate buffering icon
@@ -131,10 +145,175 @@ connect(m_icyReader, &IcyStreamReader::readyToPlay, this, [this]() {
     if (m_icyReader->isActive()) {
         qDebug() << "IcyStreamReader is ready, handing device to QMediaPlayer";
         m_player->setSourceDevice(m_icyReader, QUrl(m_currentUrl));
-        m_audioOutput->setVolume(m_volume);
+        applyEffectiveVolume();
         m_player->play();
     }
 });
+}
+
+RadioBackend::~RadioBackend()
+{
+    freeMeter();
+}
+
+double RadioBackend::attenuationGainDb(double measuredLufs, double targetLufs)
+{
+    double g = targetLufs - measuredLufs; // negative when the stream is louder than target
+    if (g > 0.0)
+        g = 0.0;                          // attenuate only: can't boost past the user's volume
+    if (g < -LOUDNESS_MAX_ATTEN_DB)
+        g = -LOUDNESS_MAX_ATTEN_DB;
+    return g;
+}
+
+bool RadioBackend::loudnessMeasurable(double lufs)
+{
+    // libebur128 reports roughly -HUGE_VAL for silence; ignore those so we don't
+    // crank the gain during buffering / dead air.
+    return std::isfinite(lufs) && lufs > -60.0;
+}
+
+void RadioBackend::onAudioBuffer(const QAudioBuffer &buffer)
+{
+    if (!m_normalizeLoudness || !m_loudnessAuto || !buffer.isValid())
+        return; // manual mode: no measurement, stored gain is just applied
+
+    const QAudioFormat fmt = buffer.format();
+    const int ch = fmt.channelCount();
+    const int rate = fmt.sampleRate();
+    if (ch <= 0 || rate <= 0)
+        return;
+
+    // (Re)create the meter if the format changed. Note: this does NOT reset the
+    // applied gain, so a seeded station keeps its level while the meter warms up.
+    // MODE_I = integrated loudness: gated and cumulative, it converges to the
+    // station's overall level and then holds steady (a stable offset, not AGC).
+    if (!m_ebur128State || ch != m_eburChannels || rate != m_eburRate) {
+        freeMeter();
+        m_ebur128State = ebur128_init((unsigned)ch, (unsigned long)rate, EBUR128_MODE_I);
+        m_eburChannels = ch;
+        m_eburRate = rate;
+    }
+    auto *st = static_cast<ebur128_state *>(m_ebur128State);
+    if (!st)
+        return;
+
+    const size_t frames = (size_t)buffer.frameCount();
+    switch (fmt.sampleFormat()) {
+    case QAudioFormat::Int16:
+        ebur128_add_frames_short(st, buffer.constData<short>(), frames);
+        break;
+    case QAudioFormat::Int32:
+        ebur128_add_frames_int(st, buffer.constData<int>(), frames);
+        break;
+    case QAudioFormat::Float:
+        ebur128_add_frames_float(st, buffer.constData<float>(), frames);
+        break;
+    case QAudioFormat::UInt8:
+    case QAudioFormat::Unknown:
+    default:
+        break; // unsupported PCM format for measurement; leave gain unchanged
+    }
+}
+
+void RadioBackend::updateNormalizationGain()
+{
+    if (!m_normalizeLoudness || !m_loudnessAuto)
+        return; // disabled, or manual mode: hold the seeded/stored gain
+    auto *st = static_cast<ebur128_state *>(m_ebur128State);
+    if (!st)
+        return;
+
+    double lufs = 0.0;
+    if (ebur128_loudness_global(st, &lufs) != EBUR128_SUCCESS) // integrated loudness
+        return;
+    if (!loudnessMeasurable(lufs))
+        return; // silence / not enough data yet — hold current gain
+
+    // Integrated loudness is already self-smoothing, so use it directly.
+    m_measuredLoudness = lufs;
+
+    const double desired = attenuationGainDb(m_measuredLoudness, LOUDNESS_TARGET_LUFS);
+
+    // Slew toward the target so changes are gradual (no pumping).
+    const double delta = desired - m_normGainDb;
+    if (delta > LOUDNESS_SLEW_DB_PER_TICK)
+        m_normGainDb += LOUDNESS_SLEW_DB_PER_TICK;
+    else if (delta < -LOUDNESS_SLEW_DB_PER_TICK)
+        m_normGainDb -= LOUDNESS_SLEW_DB_PER_TICK;
+    else
+        m_normGainDb = desired;
+
+    applyEffectiveVolume();
+
+    // Tell QML to persist once the estimate has moved enough to matter.
+    if (!std::isfinite(m_lastEmittedLoudness) ||
+        std::fabs(m_measuredLoudness - m_lastEmittedLoudness) > 0.5) {
+        m_lastEmittedLoudness = m_measuredLoudness;
+        Q_EMIT measuredLoudnessChanged();
+    }
+}
+
+void RadioBackend::applyEffectiveVolume()
+{
+    double linear = std::pow(10.0, m_normGainDb / 20.0); // <= 1.0 (m_normGainDb <= 0)
+    double v = m_volume * linear;
+    if (v < 0.0) v = 0.0;
+    if (v > 1.0) v = 1.0;
+    m_audioOutput->setVolume(v);
+}
+
+void RadioBackend::freeMeter()
+{
+    if (m_ebur128State) {
+        auto *st = static_cast<ebur128_state *>(m_ebur128State);
+        ebur128_destroy(&st);
+        m_ebur128State = nullptr;
+    }
+    m_eburChannels = 0;
+    m_eburRate = 0;
+}
+
+void RadioBackend::beginStreamLoudness()
+{
+    // Called when a new station starts. Seed the gain from its last-known loudness
+    // (set by QML via knownLoudness) so it plays at the right level immediately. If
+    // it's never been measured, fall back to an assumed-loud default so it still
+    // starts pre-attenuated instead of blasting until the meter converges.
+    freeMeter();
+    if (m_normalizeLoudness) {
+        const double seed = std::isfinite(m_seedLoudness) ? m_seedLoudness : LOUDNESS_DEFAULT_LUFS;
+        m_normGainDb = attenuationGainDb(seed, LOUDNESS_TARGET_LUFS);
+    } else {
+        m_normGainDb = 0.0;
+    }
+    // Only real, known loudness is exposed/persisted — never the assumed default.
+    m_measuredLoudness = m_seedLoudness;
+    m_lastEmittedLoudness = kNaN;
+    applyEffectiveVolume();
+}
+
+void RadioBackend::setLoudnessAuto(bool on)
+{
+    if (m_loudnessAuto == on)
+        return;
+    m_loudnessAuto = on;
+    if (!on)
+        freeMeter(); // stop measuring; the current (seeded/stored) gain is held
+    Q_EMIT loudnessAutoChanged();
+}
+
+void RadioBackend::setNormalizeLoudness(bool on)
+{
+    if (m_normalizeLoudness == on)
+        return;
+    m_normalizeLoudness = on;
+    if (!on) {
+        freeMeter();
+        m_normGainDb = 0.0; // back to the user's volume immediately
+        applyEffectiveVolume();
+    }
+    Q_EMIT normalizeLoudnessChanged();
 }
 
 bool RadioBackend::isPlaying() const { return m_playing; }
@@ -210,7 +389,7 @@ void RadioBackend::setCurrentUrl(const QString &url)
         m_icyReader->stop();
         m_player->stop();
         m_player->setSource(QUrl());
-        m_audioOutput->setVolume(m_volume);
+        beginStreamLoudness(); // seed gain from the station's known loudness, then refine
 
         m_currentUrl = url;
         
@@ -259,7 +438,11 @@ void RadioBackend::stop() {
     m_icyReader->stop();
     m_player->stop();
     m_player->setSource(QUrl()); // clear stale source so next setSourceDevice is a fresh start
-    m_audioOutput->setVolume(m_volume);
+    freeMeter();
+    m_normGainDb = 0.0;
+    m_measuredLoudness = kNaN;
+    m_lastEmittedLoudness = kNaN;
+    applyEffectiveVolume();
 
     if (!m_streamTitle.isEmpty()) {
         m_streamTitle.clear();
@@ -435,7 +618,7 @@ void RadioBackend::attemptReconnect()
     m_icyReader->stop();
     m_player->stop();
     m_player->setSource(QUrl());
-    m_audioOutput->setVolume(m_volume);
+    applyEffectiveVolume();
 
     if (!m_buffering) {
         m_buffering = true;

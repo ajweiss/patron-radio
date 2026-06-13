@@ -1,6 +1,8 @@
 #include <QtTest>
 #include <QSignalSpy>
 #include <QTimer>
+#include <cmath>
+#include <limits>
 #include "../src/radiobackend.h"
 
 // Helpers
@@ -500,6 +502,89 @@ private Q_SLOTS:
         b.SetPosition(QDBusObjectPath("/"), 0);
         b.SetLoopStatus(QStringLiteral("Track"));
         b.SetRate(2.0);
+    }
+
+    void testLoudnessGain()
+    {
+        const double target = -18.0;
+
+        // Louder than target -> attenuate by the difference.
+        QCOMPARE(RadioBackend::attenuationGainDb(-12.0, target), -6.0);  // -18 - (-12)
+        QCOMPARE(RadioBackend::attenuationGainDb(-8.0, target), -10.0);
+
+        // Exactly at target -> no change.
+        QCOMPARE(RadioBackend::attenuationGainDb(target, target), 0.0);
+
+        // Quieter than target -> never boost (attenuation only).
+        QCOMPARE(RadioBackend::attenuationGainDb(-24.0, target), 0.0);
+        QCOMPARE(RadioBackend::attenuationGainDb(-40.0, target), 0.0);
+
+        // Very loud -> clamped to the max attenuation (24 dB).
+        QCOMPARE(RadioBackend::attenuationGainDb(0.0, target), -18.0);
+        QCOMPARE(RadioBackend::attenuationGainDb(12.0, target), -24.0); // would be -30, clamped
+    }
+
+    void testLoudnessMeasurable()
+    {
+        QVERIFY(RadioBackend::loudnessMeasurable(-18.0));
+        QVERIFY(RadioBackend::loudnessMeasurable(-59.0));
+        QVERIFY(!RadioBackend::loudnessMeasurable(-61.0));   // effectively silence
+        QVERIFY(!RadioBackend::loudnessMeasurable(-std::numeric_limits<double>::infinity()));
+        QVERIFY(!RadioBackend::loudnessMeasurable(std::nan("")));
+    }
+
+    void testNormalizeLoudnessToggle()
+    {
+        RadioBackend b;
+        QSignalSpy spy(&b, &RadioBackend::normalizeLoudnessChanged);
+        b.setNormalizeLoudness(false);
+        QCOMPARE(b.normalizeLoudness(), false);
+        QCOMPARE(spy.count(), 1);
+        b.setNormalizeLoudness(false); // no-op, no extra signal
+        QCOMPARE(spy.count(), 1);
+        b.setNormalizeLoudness(true);
+        QCOMPARE(b.normalizeLoudness(), true);
+        QCOMPARE(spy.count(), 2);
+    }
+
+    void testKnownLoudnessSeed()
+    {
+        RadioBackend b;
+        QVERIFY(std::isnan(b.knownLoudness()));   // unknown by default
+        QVERIFY(std::isnan(b.measuredLoudness())); // nothing measured yet
+        b.setKnownLoudness(-14.0);
+        QCOMPARE(b.knownLoudness(), -14.0);
+        b.setKnownLoudness(std::nan(""));          // back to "unknown"
+        QVERIFY(std::isnan(b.knownLoudness()));
+    }
+
+    void testLoudnessAutoToggle()
+    {
+        RadioBackend b;
+        QCOMPARE(b.loudnessAuto(), true); // default
+        QSignalSpy spy(&b, &RadioBackend::loudnessAutoChanged);
+        b.setLoudnessAuto(false);
+        QCOMPARE(b.loudnessAuto(), false);
+        QCOMPARE(spy.count(), 1);
+        b.setLoudnessAuto(false); // no-op
+        QCOMPARE(spy.count(), 1);
+        b.setLoudnessAuto(true);
+        QCOMPARE(spy.count(), 2);
+    }
+
+    void testManualGainRoundTrip()
+    {
+        // The settings UI maps an edited dB adjustment to a stored loudness via
+        // loudness = target - adj, which must round-trip back through the gain math.
+        RadioBackend b;
+        const double target = b.loudnessTarget();
+        const double adjustments[] = { -0.5, -6.0, -12.0, -23.0 };
+        for (double adj : adjustments) {
+            double loudness = target - adj;
+            QCOMPARE(RadioBackend::attenuationGainDb(loudness, target), adj);
+        }
+        // Beyond the clamp, it saturates at -24 dB.
+        QCOMPARE(RadioBackend::attenuationGainDb(target - (-30.0), target), -24.0);
     }
 };
 

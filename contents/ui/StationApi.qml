@@ -32,18 +32,12 @@ Item {
                         }
                         if (foundUrl !== "") {
                             root.stationModel.setProperty(root.currentStationIndex, "url", foundUrl);
-                            var stationsArray = [];
-                            for (var j = 0; j < root.stationModel.count; j++) {
-                                stationsArray.push({
-                                    "name": root.stationModel.get(j).name, "city": root.stationModel.get(j).city,
-                                    "url": root.stationModel.get(j).url, "website": root.stationModel.get(j).website,
-                                    "donate": root.stationModel.get(j).donate, "icon": root.stationModel.get(j).icon,
-                                    "lat": root.stationModel.get(j).lat, "lon": root.stationModel.get(j).lon
-                                });
-                            }
-                            Plasmoid.configuration.stationsJson = JSON.stringify(stationsArray);
+                            // New stream URL -> old loudness no longer applies; re-measure.
+                            root.stationModel.setProperty(root.currentStationIndex, "loudness", NaN);
+                            root.saveStations();
                             root.currentTrack = "";
                             root.playbackState = root.stateBuffering;
+                            RadioBackendModule.RadioBackend.knownLoudness = NaN;
                             RadioBackendModule.RadioBackend.currentUrl = foundUrl;
                             RadioBackendModule.RadioBackend.play();
                         } else { root.playbackState = root.stateBroken; root.currentTrack = "Could not find a working replacement stream."; }

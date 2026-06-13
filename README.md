@@ -41,17 +41,17 @@ To build and run Patron Radio, you need the following development packages:
 
 ### Fedora
 ```bash
-sudo dnf install qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-bluez-qt-devel cmake extra-cmake-modules
+sudo dnf install qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-bluez-qt-devel libebur128-devel cmake extra-cmake-modules
 ```
 
 ### Arch Linux
 ```bash
-sudo pacman -S qt6-multimedia kcoreaddons kconfig ki18n bluez-qt cmake extra-cmake-modules
+sudo pacman -S qt6-multimedia kcoreaddons kconfig ki18n bluez-qt libebur128 cmake extra-cmake-modules
 ```
 
 ### Ubuntu / KDE Neon
 ```bash
-sudo apt install qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6bluezqt-dev cmake extra-cmake-modules
+sudo apt install qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6bluezqt-dev libebur128-dev cmake extra-cmake-modules
 ```
 
 ## Build & Installation

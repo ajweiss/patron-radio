@@ -1,3 +1,5 @@
+find_library(EBUR128_LIBRARY NAMES ebur128 REQUIRED)
+
 set(DBUS_ADAPTOR_SRCS)
 qt_add_dbus_adaptor(DBUS_ADAPTOR_SRCS org.mpris.MediaPlayer2.xml radiobackend.h RadioBackend mprisrootadaptor MprisRootAdaptor)
 qt_add_dbus_adaptor(DBUS_ADAPTOR_SRCS org.mpris.MediaPlayer2.Player.xml radiobackend.h RadioBackend mprisplayeradaptor MprisPlayerAdaptor)
@@ -16,6 +18,7 @@ target_link_libraries(patronradiocore PUBLIC
     Qt::Multimedia
     Qt::Network
     Qt::DBus
+    ${EBUR128_LIBRARY}
 )
 
 # Our QML plugin library

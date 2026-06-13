@@ -18,6 +18,8 @@ Item {
     property alias cfg_resumePlaybackOnRestart: resumePlaybackCheckbox.checked
     property alias cfg_pauseOnBtDisconnect: pauseOnBtDisconnectCheckbox.checked
     property alias cfg_inhibitSleep: inhibitSleepCheckbox.checked
+    property alias cfg_normalizeLoudness: normalizeLoudnessCheckbox.checked
+    property alias cfg_loudnessAuto: loudnessAutoCheckbox.checked
 
     // JSON configuration strings
     property string cfg_autoplayBluetoothDevices: "[]"
@@ -189,7 +191,15 @@ Item {
         PlasmaComponents.CheckBox { id: resumePlaybackCheckbox; text: "Automatically resume playback if active when last closed"; Layout.leftMargin: Kirigami.Units.largeSpacing }
         PlasmaComponents.CheckBox { id: pauseOnBtDisconnectCheckbox; text: "Pause playback when active audio device disconnects"; Layout.leftMargin: Kirigami.Units.largeSpacing }
         PlasmaComponents.CheckBox { id: inhibitSleepCheckbox; text: "Prevent system sleep while playing"; Layout.leftMargin: Kirigami.Units.largeSpacing }
-        
+        PlasmaComponents.CheckBox { id: normalizeLoudnessCheckbox; text: "Normalize loudness across stations"; Layout.leftMargin: Kirigami.Units.largeSpacing }
+        PlasmaComponents.CheckBox {
+            id: loudnessAutoCheckbox
+            text: "Measure levels automatically"
+            enabled: normalizeLoudnessCheckbox.checked
+            Layout.leftMargin: Kirigami.Units.largeSpacing
+            PlasmaComponents.ToolTip { text: "When off, the per-station adjustments in the Stations tab become editable and are never overwritten." }
+        }
+
         Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.largeSpacing; Layout.bottomMargin: Kirigami.Units.largeSpacing }
 
         Kirigami.Heading { text: "Audio Output Priority"; level: 4; Layout.fillWidth: true }

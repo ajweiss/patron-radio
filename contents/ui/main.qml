@@ -33,11 +33,14 @@ PlasmoidItem {
         Plasmoid.configuration.defaultStation = currentStationIndex
     }
 
-    property string currentStationName: stationModel.count > 0 ? stationModel.get(currentStationIndex).name : ""
-    property string currentStationCity: stationModel.count > 0 ? stationModel.get(currentStationIndex).city : ""
-    property string currentStationIcon: stationModel.count > 0 ? stationModel.get(currentStationIndex).icon : "radio"
-    property string currentStationWebsite: stationModel.count > 0 ? (stationModel.get(currentStationIndex).website || "") : ""
-    property string currentStationDonate: stationModel.count > 0 ? (stationModel.get(currentStationIndex).donate || "") : ""
+    // True only when currentStationIndex is a valid row — guards against the model
+    // being mid-load (count between 1 and the index) where get() returns undefined.
+    readonly property bool hasCurrentStation: currentStationIndex >= 0 && currentStationIndex < stationModel.count
+    property string currentStationName: hasCurrentStation ? stationModel.get(currentStationIndex).name : ""
+    property string currentStationCity: hasCurrentStation ? stationModel.get(currentStationIndex).city : ""
+    property string currentStationIcon: hasCurrentStation ? stationModel.get(currentStationIndex).icon : "radio"
+    property string currentStationWebsite: hasCurrentStation ? (stationModel.get(currentStationIndex).website || "") : ""
+    property string currentStationDonate: hasCurrentStation ? (stationModel.get(currentStationIndex).donate || "") : ""
     property string currentTrack: ""
     property string streamCodec: ""
     property string streamBitrate: ""
@@ -105,6 +108,13 @@ PlasmoidItem {
                 root.playbackState = root.stateBuffering;
             }
         }
+        function onMeasuredLoudnessChanged() {
+            var lufs = RadioBackendModule.RadioBackend.measuredLoudness;
+            if (isNaN(lufs)) return;
+            if (root.currentStationIndex < 0 || root.currentStationIndex >= stationModel.count) return;
+            stationModel.setProperty(root.currentStationIndex, "loudness", lufs);
+            root.persistStationsSoon();
+        }
         function onNextRequested() {
             if (stationModel.count > 0) {
                 root.playStation((root.currentStationIndex + 1) % stationModel.count);
@@ -140,6 +150,7 @@ PlasmoidItem {
             playbackState = stateBuffering;
             var station = stationModel.get(currentStationIndex);
             RadioBackendModule.RadioBackend.currentStationName = station.name;
+            RadioBackendModule.RadioBackend.knownLoudness = stationLoudness(station);
             RadioBackendModule.RadioBackend.currentUrl = station.url;
             audioRouter.applyBestAudioRouting();
             RadioBackendModule.RadioBackend.play();
@@ -156,6 +167,7 @@ PlasmoidItem {
             streamBitrate = "";
             playbackState = stateBuffering;
             RadioBackendModule.RadioBackend.currentStationName = stationModel.get(index).name;
+            RadioBackendModule.RadioBackend.knownLoudness = stationLoudness(stationModel.get(index));
             RadioBackendModule.RadioBackend.currentUrl = stationModel.get(index).url;
             audioRouter.applyBestAudioRouting();
             RadioBackendModule.RadioBackend.play();
@@ -180,20 +192,60 @@ PlasmoidItem {
     // --- Station Data ---
     ListModel { id: stationModel }
 
+    // Per-station loudness (LUFS) for normalization. NaN means "not measured yet".
+    function stationLoudness(st) {
+        return (st && typeof st.loudness === "number" && !isNaN(st.loudness)) ? st.loudness : NaN;
+    }
+
     function loadStations() {
         stationModel.clear();
         try {
             var stations = JSON.parse(Plasmoid.configuration.stationsJson || "[]");
-            for (var i = 0; i < stations.length; i++) stationModel.append(stations[i]);
+            for (var i = 0; i < stations.length; i++) {
+                var s = stations[i];
+                // Ensure the 'loudness' role always exists (ListModel fixes roles
+                // from the first row) so we can setProperty it later.
+                if (typeof s.loudness !== "number") s.loudness = NaN;
+                stationModel.append(s);
+            }
         } catch (e) {}
         if (currentStationIndex >= stationModel.count) currentStationIndex = 0;
     }
+
+    // Persist the station list (including learned loudness) back to config.
+    function saveStations() {
+        var arr = [];
+        for (var j = 0; j < stationModel.count; j++) {
+            var m = stationModel.get(j);
+            var o = {
+                "name": m.name, "city": m.city, "url": m.url, "website": m.website,
+                "donate": m.donate, "icon": m.icon, "lat": m.lat, "lon": m.lon
+            };
+            if (typeof m.loudness === "number" && !isNaN(m.loudness)) o.loudness = m.loudness;
+            arr.push(o);
+        }
+        Plasmoid.configuration.stationsJson = JSON.stringify(arr);
+    }
+
+    // Debounce config writes — loudness updates arrive every few hundred ms.
+    Timer { id: saveStationsTimer; interval: 4000; onTriggered: root.saveStations() }
+    function persistStationsSoon() { saveStationsTimer.restart(); }
 
     // --- Initialization ---
     Binding {
         target: RadioBackendModule.RadioBackend
         property: "inhibitSleep"
         value: Plasmoid.configuration.inhibitSleep
+    }
+    Binding {
+        target: RadioBackendModule.RadioBackend
+        property: "normalizeLoudness"
+        value: Plasmoid.configuration.normalizeLoudness
+    }
+    Binding {
+        target: RadioBackendModule.RadioBackend
+        property: "loudnessAuto"
+        value: Plasmoid.configuration.loudnessAuto
     }
 
     Component.onCompleted: {

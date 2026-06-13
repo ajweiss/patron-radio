@@ -4,12 +4,27 @@ import QtQuick.Layouts
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.components as PlasmaComponents
 
+import "../imports/com/signal11/patronradio" as RadioBackendModule
+
 Item {
     id: configRoot
     Layout.fillWidth: true
     Layout.fillHeight: true
 
     property string cfg_stationsJson: ""
+    property bool cfg_loudnessAuto: true
+
+    readonly property real loudnessTarget: RadioBackendModule.RadioBackend.loudnessTarget
+
+    // Attenuation (dB, <= 0) applied to a station given its measured loudness.
+    // Mirrors RadioBackend::attenuationGainDb: attenuate only, clamp to -24 dB.
+    function adjustmentDb(loud) {
+        if (typeof loud !== "number" || isNaN(loud)) return NaN
+        var g = loudnessTarget - loud
+        if (g > 0) g = 0
+        if (g < -24) g = -24
+        return g
+    }
 
     ListModel {
         id: internalModel
@@ -24,7 +39,10 @@ Item {
         try {
             var stations = JSON.parse(cfg_stationsJson || "[]")
             for (var i = 0; i < stations.length; i++) {
-                internalModel.append(stations[i])
+                var s = stations[i]
+                // Ensure the 'loudness' role exists (ListModel fixes roles from row 0).
+                if (typeof s.loudness !== "number") s.loudness = NaN
+                internalModel.append(s)
             }
         } catch(e) {
             console.warn("Failed to parse stations Json", e)
@@ -45,6 +63,7 @@ Item {
             }
             if (item.lat !== undefined && item.lat !== "") st["lat"] = parseFloat(item.lat)
             if (item.lon !== undefined && item.lon !== "") st["lon"] = parseFloat(item.lon)
+            if (typeof item.loudness === "number" && !isNaN(item.loudness)) st["loudness"] = item.loudness
             stations.push(st)
         }
         cfg_stationsJson = JSON.stringify(stations)
@@ -144,33 +163,21 @@ Item {
                                     onClicked: isExpanded = !isExpanded
                                 }
 
-                                PlasmaComponents.TextField {
+                                // Header is a read-only summary; editing happens in the expanded form.
+                                PlasmaComponents.Label {
                                     Layout.fillWidth: true
                                     Layout.preferredWidth: 2
-                                    text: model.name
-                                    placeholderText: "Station Name"
+                                    text: model.name || "Unnamed Station"
                                     font.weight: Font.Bold
-                                    background: null
-                                    onTextChanged: {
-                                        if (model.name !== text) {
-                                            internalModel.setProperty(index, "name", text)
-                                            saveModel()
-                                        }
-                                    }
+                                    elide: Text.ElideRight
                                 }
 
-                                PlasmaComponents.TextField {
+                                PlasmaComponents.Label {
                                     Layout.fillWidth: true
                                     Layout.preferredWidth: 1
-                                    text: model.city
-                                    placeholderText: "City, ST"
-                                    background: null
-                                    onTextChanged: {
-                                        if (model.city !== text) {
-                                            internalModel.setProperty(index, "city", text)
-                                            saveModel()
-                                        }
-                                    }
+                                    text: model.city || ""
+                                    opacity: 0.7
+                                    elide: Text.ElideRight
                                 }
 
                                 PlasmaComponents.ToolButton {
@@ -202,6 +209,32 @@ Item {
                                 anchors.right: parent.right
                                 anchors.margins: Kirigami.Units.largeSpacing
                                 
+                                PlasmaComponents.TextField {
+                                    Kirigami.FormData.label: "Name:"
+                                    Layout.fillWidth: true
+                                    text: model.name
+                                    placeholderText: "Station Name"
+                                    onTextChanged: {
+                                        if (model.name !== text) {
+                                            internalModel.setProperty(index, "name", text)
+                                            saveModel()
+                                        }
+                                    }
+                                }
+
+                                PlasmaComponents.TextField {
+                                    Kirigami.FormData.label: "Location:"
+                                    Layout.fillWidth: true
+                                    text: model.city
+                                    placeholderText: "City, ST"
+                                    onTextChanged: {
+                                        if (model.city !== text) {
+                                            internalModel.setProperty(index, "city", text)
+                                            saveModel()
+                                        }
+                                    }
+                                }
+
                                 PlasmaComponents.TextField {
                                     Kirigami.FormData.label: "Stream URL:"
                                     Layout.fillWidth: true
@@ -291,6 +324,58 @@ Item {
                                             internalModel.setProperty(index, "icon", selectedIcon)
                                             saveModel()
                                         }
+                                    }
+                                }
+
+                                // Loudness level: measured (automatic) or hand-set (manual).
+                                RowLayout {
+                                    Kirigami.FormData.label: "Level:"
+                                    Layout.fillWidth: true
+                                    spacing: Kirigami.Units.smallSpacing
+
+                                    readonly property real adj: configRoot.adjustmentDb(Number(model.loudness))
+
+                                    // Automatic: read-only measured result.
+                                    PlasmaComponents.Label {
+                                        visible: configRoot.cfg_loudnessAuto
+                                        text: {
+                                            if (isNaN(parent.adj)) return "measuring…"
+                                            var dbStr = parent.adj <= -0.05 ? parent.adj.toFixed(1) + " dB" : "0 dB"
+                                            return dbStr + "   (" + Number(model.loudness).toFixed(1) + " LUFS)"
+                                        }
+                                        opacity: 0.7
+                                        HoverHandler { id: levelHover }
+                                        PlasmaComponents.ToolTip {
+                                            visible: levelHover.hovered
+                                            text: "Turn off \"Measure levels automatically\" (Behavior tab) to set this manually."
+                                        }
+                                    }
+
+                                    // Manual: editable attenuation in dB.
+                                    PlasmaComponents.TextField {
+                                        visible: !configRoot.cfg_loudnessAuto
+                                        Layout.preferredWidth: Kirigami.Units.gridUnit * 4
+                                        horizontalAlignment: TextInput.AlignRight
+                                        text: !isNaN(parent.adj) ? parent.adj.toFixed(1) : ""
+                                        placeholderText: "0"
+                                        validator: DoubleValidator { bottom: -24.0; top: 0.0; decimals: 1; notation: DoubleValidator.StandardNotation }
+                                        onEditingFinished: {
+                                            var v = parseFloat(text)
+                                            if (isNaN(v)) {
+                                                internalModel.setProperty(index, "loudness", NaN) // clear -> use default
+                                            } else {
+                                                if (v > 0) v = 0
+                                                if (v < -24) v = -24
+                                                internalModel.setProperty(index, "loudness", configRoot.loudnessTarget - v)
+                                            }
+                                            saveModel()
+                                        }
+                                    }
+                                    PlasmaComponents.Label {
+                                        visible: !configRoot.cfg_loudnessAuto
+                                        text: "dB attenuation (boost not possible)"
+                                        opacity: 0.5
+                                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                                     }
                                 }
                             }

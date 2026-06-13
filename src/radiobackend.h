@@ -11,8 +11,12 @@
 #include <QAudioDevice>
 #include <QDBusUnixFileDescriptor>
 #include <QTimer>
+#include <limits>
 
 #include "icystreamreader.h"
+
+class QAudioBufferOutput;
+class QAudioBuffer;
 
 class RadioBackend : public QObject
 {
@@ -28,7 +32,16 @@ class RadioBackend : public QObject
     Q_PROPERTY(QVariantList availableOutputs READ availableOutputs NOTIFY availableOutputsChanged)
     Q_PROPERTY(QString lastError READ lastError NOTIFY lastErrorChanged)
     Q_PROPERTY(bool inhibitSleep READ inhibitSleep WRITE setInhibitSleep NOTIFY inhibitSleepChanged)
-    
+    Q_PROPERTY(bool normalizeLoudness READ normalizeLoudness WRITE setNormalizeLoudness NOTIFY normalizeLoudnessChanged)
+    // knownLoudness: QML seeds this (LUFS, NaN if unknown) before switching station
+    // so a previously-measured station starts at the right level instantly.
+    // measuredLoudness: the live estimate QML reads back and persists per station.
+    Q_PROPERTY(double knownLoudness READ knownLoudness WRITE setKnownLoudness)
+    Q_PROPERTY(double measuredLoudness READ measuredLoudness NOTIFY measuredLoudnessChanged)
+    Q_PROPERTY(double loudnessTarget READ loudnessTarget CONSTANT) // normalization target (LUFS)
+    // When false, levels aren't measured — stored/manual loudness values are applied but never overwritten.
+    Q_PROPERTY(bool loudnessAuto READ loudnessAuto WRITE setLoudnessAuto NOTIFY loudnessAutoChanged)
+
     QML_ELEMENT
     QML_SINGLETON
 
@@ -57,6 +70,24 @@ class RadioBackend : public QObject
 
 public:
     explicit RadioBackend(QObject *parent = nullptr);
+    ~RadioBackend() override;
+
+    bool normalizeLoudness() const { return m_normalizeLoudness; }
+    void setNormalizeLoudness(bool on);
+
+    double knownLoudness() const { return m_seedLoudness; }
+    void setKnownLoudness(double lufs) { m_seedLoudness = lufs; } // applied at next stream start
+    double measuredLoudness() const { return m_measuredLoudness; }
+    double loudnessTarget() const { return LOUDNESS_TARGET_LUFS; }
+    bool loudnessAuto() const { return m_loudnessAuto; }
+    void setLoudnessAuto(bool on);
+
+    // Loudness math, factored out as pure functions so they can be unit-tested
+    // without an audio pipeline. attenuationGainDb returns the gain (always <= 0,
+    // i.e. attenuation only — QAudioOutput can't amplify past the user's volume)
+    // needed to bring measuredLufs down to targetLufs, clamped to a safe range.
+    static double attenuationGainDb(double measuredLufs, double targetLufs);
+    static bool loudnessMeasurable(double lufs); // false for silence / non-finite
 
     bool isPlaying() const;
     bool isBuffering() const;
@@ -98,7 +129,7 @@ public:
     void SetRate(double ) {}
     void SetVolume(double v) {
         m_volume = v;
-        m_audioOutput->setVolume(v);
+        applyEffectiveVolume(); // honour the loudness-normalization gain
         QVariantMap changed;
         changed[QStringLiteral("Volume")] = m_volume;
         emitMprisPropertiesChanged(QStringLiteral("org.mpris.MediaPlayer2.Player"), changed);
@@ -138,6 +169,9 @@ Q_SIGNALS:
     void inhibitSleepChanged();
     void nextRequested();
     void previousRequested();
+    void normalizeLoudnessChanged();
+    void measuredLoudnessChanged();
+    void loudnessAutoChanged();
 
 private:
     QMediaPlayer *m_player;
@@ -167,6 +201,38 @@ private:
     // stalled/re-buffering past this timeout we force a clean reconnect.
     QTimer m_stallTimer;
     static constexpr int STALL_TIMEOUT_MS = 7000;
+
+    // Loudness normalization (EBU R128). We tap decoded PCM via QAudioBufferOutput,
+    // measure short-term loudness with libebur128, and attenuate the output toward
+    // a target LUFS. Attenuation only: louder stations are pulled down to match,
+    // quieter ones are left as-is (the master volume can't exceed 1.0).
+    QAudioBufferOutput *m_audioBufferOutput = nullptr;
+    void *m_ebur128State = nullptr;   // opaque ebur128_state* (kept out of the header)
+    int m_eburChannels = 0;
+    int m_eburRate = 0;
+    double m_normGainDb = 0.0;        // currently applied attenuation, <= 0
+    bool m_normalizeLoudness = true;
+    bool m_loudnessAuto = true;       // measure & refine loudness vs. apply stored values only
+    QTimer m_loudnessTimer;
+    static constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
+    double m_seedLoudness = kNaN;        // last-known loudness for the current station (from config)
+    double m_measuredLoudness = kNaN;    // live estimate (EMA), exposed to QML for persistence
+    double m_lastEmittedLoudness = kNaN; // throttles measuredLoudnessChanged
+    // EBU R128 broadcast reference. Deliberately low so nearly every station
+    // sits above it and can be normalized *down* to match (we can only attenuate).
+    static constexpr double LOUDNESS_TARGET_LUFS = -23.0;
+    // Assumed level for a not-yet-measured station, so it starts pre-attenuated
+    // instead of blasting at full volume until the meter converges.
+    static constexpr double LOUDNESS_DEFAULT_LUFS = -16.0;
+    static constexpr double LOUDNESS_MAX_ATTEN_DB = 24.0;
+    static constexpr double LOUDNESS_SLEW_DB_PER_TICK = 1.0; // limits how fast gain moves -> no pumping
+    static constexpr int LOUDNESS_TICK_MS = 400;
+
+    void onAudioBuffer(const QAudioBuffer &buffer);
+    void updateNormalizationGain();
+    void applyEffectiveVolume();
+    void freeMeter();        // destroy the ebur128 meter (leaves gain untouched)
+    void beginStreamLoudness(); // free meter + seed gain from m_seedLoudness for a new station
 
     void emitMprisPropertiesChanged(const QString &interface, const QVariantMap &changedProperties);
     void takeSleepInhibitLock();
