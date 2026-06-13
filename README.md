@@ -28,12 +28,24 @@ Patron Radio is a hybrid QML/C++ Plasma widget. The UI layer is pure QML (as is 
 
 *   **Independent Radio Focus**: Pre-configured with a selection of world-class independent stations.
 *   **Support Your Stations**: Integrated **Donate** buttons make it easy to support the independent broadcasters you love with a single click.
+*   **Loudness Normalization**: Evens out the often-jarring volume differences between stations using EBU R128 loudness measurement, so switching never blasts or whispers. Levels are learned per station and can be overridden by hand. See below.
 *   **MPRIS Integration**: Fully controllable via the standard Plasma Media Controller, lock screen, and keyboard media keys.
 *   **Smart Hardware Routing**: Define a prioritized list of audio devices; the widget automatically routes audio to the best available sink upon connection.
 *   **Autoplay Triggers**: Automatically start your favorite station when your headphones or speakers connect.
 *   **Dynamic Metadata**: Extracts live "StreamTitle" information even from streams that standard players often miss.
 *   **Compact Marquee**: A polished panel widget that scrolls long track titles to save space.
 *   **Station "Fix" Tool**: Automatically searches for replacement stream URLs if a station goes offline.
+
+## Loudness Normalization
+
+Internet radio streams are mastered at wildly different levels -- the bundled stations span roughly 13 dB -- so hopping between them means constantly reaching for the volume knob. Patron Radio fixes this the way streaming services do: with **loudness normalization** rather than crude AGC.
+
+*   The C++ backend taps the decoded audio (via `QAudioBufferOutput`) and measures **integrated loudness** with [libebur128](https://github.com/jiixyj/libebur128) (EBU R128 / ITU-R BS.1770). Integrated loudness is a stable per-station offset, not a moving gain, so it doesn't pump or breathe.
+*   Stations louder than the **-23 LUFS** target are attenuated down to match; quieter ones are left as-is (`QAudioOutput` can't amplify past your volume, so it's attenuation-only -- set your master volume once and every station sits at the same level).
+*   Each station's measured loudness is **remembered**, so returning to it is leveled instantly, and the bundled stations ship with pre-measured values.
+*   Prefer to set levels yourself? Turn off **Measure levels automatically** in the settings and the per-station attenuation becomes an editable field that's never overwritten.
+
+It can be disabled entirely from the widget's behavior settings.
 
 ## Dependencies
 
