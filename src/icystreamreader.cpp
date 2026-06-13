@@ -1,13 +1,22 @@
 #include "icystreamreader.h"
 #include <QNetworkRequest>
 #include <QMutexLocker>
+#include <QThread>
 #include <QDebug>
 
-static constexpr int READY_THRESHOLD = 128 * 1024;   // 128KB before playback
-static constexpr int MAX_BUFFER = 10 * 1024 * 1024;  // 10MB cap
+// Pre-play buffer: aim for a fixed *duration* of audio (so start-up latency
+// doesn't balloon on low-bitrate streams), sized from the station's advertised
+// icy-br (assuming 128kbps when absent). The target duration is supplied by the
+// caller per start() so RadioBackend can begin thin for a fast start and, if the
+// stream keeps underrunning, retry with a larger pre-roll until it holds.
+static constexpr int READY_DEFAULT_MS = 2000;         // pre-roll if the caller doesn't specify
+static constexpr int ASSUMED_KBPS = 128;              // bitrate assumption when icy-br is absent
+static constexpr int READY_FLOOR = 16 * 1024;         // never start the demuxer with less than this
+static constexpr int MAX_BUFFER = 10 * 1024 * 1024;   // 10MB cap
+static constexpr unsigned long READ_WAIT_MS = 8000;   // max blocking wait in readData() before yielding
 
 IcyStreamReader::IcyStreamReader(QObject *parent)
-    : QIODevice(parent), m_reply(nullptr), m_metaInt(0), m_audioBytesRead(0), m_metaBytesLeft(0), m_readyToPlayEmitted(false), m_state(StateAudio)
+    : QIODevice(parent), m_reply(nullptr), m_metaInt(0), m_audioBytesRead(0), m_metaBytesLeft(0), m_readyToPlayEmitted(false), m_readyThreshold(0), m_targetMs(READY_DEFAULT_MS), m_state(StateAudio)
 {
     open(QIODevice::ReadOnly | QIODevice::Unbuffered);
 }
@@ -17,9 +26,11 @@ IcyStreamReader::~IcyStreamReader()
     stop();
 }
 
-void IcyStreamReader::start(const QUrl &url)
+void IcyStreamReader::start(const QUrl &url, int targetMs)
 {
     stop();
+
+    m_targetMs = (targetMs > 0) ? targetMs : READY_DEFAULT_MS;
 
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
@@ -30,12 +41,14 @@ void IcyStreamReader::start(const QUrl &url)
     {
         QMutexLocker locker(&m_bufferMutex);
         m_audioBuffer.clear();
+        m_active = true;
     }
     m_metaBuffer.clear();
     m_audioBytesRead = 0;
     m_metaBytesLeft = 0;
     m_state = StateAudio;
     m_metaInt = 0;
+    m_readyThreshold = 0; // recomputed from headers on first readyRead
     m_lastTitle.clear();
     m_readyToPlayEmitted = false;
 
@@ -53,6 +66,8 @@ void IcyStreamReader::stop()
     {
         QMutexLocker locker(&m_bufferMutex);
         m_audioBuffer.clear();
+        m_active = false;
+        m_dataReady.wakeAll(); // release any reader blocked in readData()
     }
     m_readyToPlayEmitted = false;
 }
@@ -60,13 +75,30 @@ void IcyStreamReader::stop()
 qint64 IcyStreamReader::readData(char *data, qint64 maxlen)
 {
     QMutexLocker locker(&m_bufferMutex);
+    // Block until audio is available instead of returning 0: the FFmpeg backend
+    // (which calls this on its own worker thread) treats a 0-length read on a
+    // live sequential source as end-of-stream, killing playback the first time
+    // our buffer momentarily drains. Wait is bounded so a truly dead stream
+    // still unblocks; the network error / stall watchdog handles real outages.
+    //
+    // CRITICAL: only block off our home thread. processData() refills the buffer
+    // on the GUI thread, so if the framework ever reads on that same thread
+    // (e.g. synchronous probing during play()), blocking would wait for a refill
+    // that can never run — freezing the UI event loop. There we return what we
+    // have (possibly 0) and let the backend retry.
+    const bool canBlock = (QThread::currentThread() != thread());
+    while (canBlock && m_active && m_audioBuffer.isEmpty()) {
+        if (!m_dataReady.wait(&m_bufferMutex, READ_WAIT_MS))
+            break; // timed out with no data — give the backend a 0 and let recovery kick in
+    }
+
     qint64 bytesToRead = qMin((qint64)m_audioBuffer.size(), maxlen);
     if (bytesToRead > 0) {
         memcpy(data, m_audioBuffer.constData(), bytesToRead);
         m_audioBuffer.remove(0, bytesToRead);
         return bytesToRead;
     }
-    return 0; // Returning 0 is proper non-blocking "no data right now"
+    return 0;
 }
 
 qint64 IcyStreamReader::writeData(const char *, qint64)
@@ -119,6 +151,21 @@ void IcyStreamReader::onReadyRead()
         } else {
             m_metaInt = -1;
         }
+    }
+
+    if (m_readyThreshold == 0) {
+        // icy-br is the stream bitrate in kbps (occasionally a comma list, e.g. "128,128").
+        int br = 0;
+        if (m_reply->hasRawHeader("icy-br"))
+            br = m_reply->rawHeader("icy-br").split(',').first().trimmed().toInt();
+        if (br <= 0)
+            br = ASSUMED_KBPS;
+
+        const qint64 bytesPerSec = (qint64)br * 1000 / 8;
+        const qint64 threshold = bytesPerSec * m_targetMs / 1000;
+        m_readyThreshold = (int)qBound((qint64)READY_FLOOR, threshold, (qint64)(MAX_BUFFER / 2));
+        qDebug() << "IcyStreamReader pre-play threshold:" << m_readyThreshold
+                 << "bytes (icy-br" << br << "kbps, target" << m_targetMs << "ms)";
     }
 
     processData();
@@ -203,6 +250,8 @@ void IcyStreamReader::processData()
             m_audioBuffer.remove(0, m_audioBuffer.size() - MAX_BUFFER);
         }
         audioBufferSize = m_audioBuffer.size();
+        if (hasNewAudio)
+            m_dataReady.wakeAll(); // unblock readData() waiting for audio
     }
 
     if (hasNewTitle) {
@@ -214,7 +263,7 @@ void IcyStreamReader::processData()
     }
 
     // Defer handing the device over to QMediaPlayer until we have an initial buffer
-    if (!m_readyToPlayEmitted && audioBufferSize > READY_THRESHOLD) {
+    if (!m_readyToPlayEmitted && audioBufferSize > m_readyThreshold) {
         m_readyToPlayEmitted = true;
         Q_EMIT readyToPlay();
     }

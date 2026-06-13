@@ -21,6 +21,21 @@ RadioBackend::RadioBackend(QObject *parent)
     m_reconnectTimer.setSingleShot(true);
     connect(&m_reconnectTimer, &QTimer::timeout, this, &RadioBackend::attemptReconnect);
 
+    m_stallTimer.setSingleShot(true);
+    connect(&m_stallTimer, &QTimer::timeout, this, [this]() {
+        // A persistent stall means the current pre-roll is too thin for this
+        // stream, so grow it before retrying; the next start() uses m_prerollMs.
+        if (m_prerollMs < PREROLL_MAX_MS) {
+            m_prerollMs = qMin(m_prerollMs * 2, PREROLL_MAX_MS);
+            qDebug() << "Playback stalled; escalating pre-roll to" << m_prerollMs << "ms and reconnecting";
+        } else {
+            qDebug() << "Playback stalled at max pre-roll; reconnecting";
+        }
+        // Route recovery through scheduleReconnect so it inherits the backoff
+        // and attempt cap and can't spin forever.
+        scheduleReconnect();
+    });
+
     // Setup DBus Adaptors
     new MprisRootAdaptor(this);
     new MprisPlayerAdaptor(this);
@@ -37,6 +52,7 @@ RadioBackend::RadioBackend(QObject *parent)
             m_playing = isNowPlaying;
             if (m_playing) {
                 m_reconnectTimer.stop();
+                m_stallTimer.stop();
                 m_reconnectDelay = 0;
                 m_reconnectAttempts = 0;
                 m_audioOutput->setVolume(m_volume);
@@ -66,8 +82,22 @@ RadioBackend::RadioBackend(QObject *parent)
         // Only clear the buffering flag when we are fully loaded or have enough buffered
         if (status == QMediaPlayer::BufferedMedia) {
             m_buffering = false;
+            m_stallTimer.stop(); // recovered on its own
+        } else if (status == QMediaPlayer::EndOfMedia) {
+            // A live stream should never "end"; if the backend declares EOF we
+            // reconnect immediately rather than waiting out the stall timeout.
+            if (m_wantsToPlay && !m_currentUrl.isEmpty() && !m_reconnectTimer.isActive()) {
+                qDebug() << "Unexpected EndOfMedia on live stream; reconnecting";
+                scheduleReconnect();
+            }
+        } else if (status == QMediaPlayer::StalledMedia || status == QMediaPlayer::BufferingMedia) {
+            // Underrun / re-buffering. Give the backend a chance to recover by
+            // itself; if it's still not BufferedMedia when the watchdog fires,
+            // we force a reconnect. (Re)start the single-shot on each event.
+            if (m_wantsToPlay && !m_currentUrl.isEmpty() && !m_reconnectTimer.isActive())
+                m_stallTimer.start(STALL_TIMEOUT_MS);
         }
-        Q_EMIT bufferingChanged(); 
+        Q_EMIT bufferingChanged();
     });
 
     connect(m_player, &QMediaPlayer::errorOccurred, this, [this](QMediaPlayer::Error error, const QString &errorString) {
@@ -178,11 +208,17 @@ void RadioBackend::setCurrentUrl(const QString &url)
     }
 
     if (m_currentUrl != url) {
-        // Stop playback and clear old buffers before switching streams
+        // Stop playback and clear old buffers before switching streams.
+        // Order matters: stop the reader FIRST so it wakes any readData() blocked
+        // on the FFmpeg/audio worker thread, otherwise m_player->stop() — which
+        // synchronously joins that worker — deadlocks the GUI thread. (This is
+        // why stop() and attemptReconnect() also stop the reader before the player.)
+        m_stallTimer.stop();
+        m_prerollMs = PREROLL_INITIAL_MS; // new station: start thin again
+        m_icyReader->stop();
         m_player->stop();
         m_player->setSource(QUrl());
         m_audioOutput->setVolume(m_volume);
-        m_icyReader->stop();
 
         m_currentUrl = url;
         
@@ -201,7 +237,7 @@ void RadioBackend::setCurrentUrl(const QString &url)
             Q_EMIT bufferingChanged();
         }
 
-        m_icyReader->start(QUrl(url));
+        m_icyReader->start(QUrl(url), m_prerollMs);
         Q_EMIT currentUrlChanged();
     }
 }
@@ -213,7 +249,7 @@ void RadioBackend::play() {
             m_buffering = true;
             Q_EMIT bufferingChanged();
         }
-        m_icyReader->start(QUrl(m_currentUrl));
+        m_icyReader->start(QUrl(m_currentUrl), m_prerollMs);
     } else {
         m_player->play();
     }
@@ -225,8 +261,10 @@ void RadioBackend::pause() {
 void RadioBackend::stop() {
     m_wantsToPlay = false;
     m_reconnectTimer.stop();
+    m_stallTimer.stop();
     m_reconnectDelay = 0;
     m_reconnectAttempts = 0;
+    m_prerollMs = PREROLL_INITIAL_MS; // fresh start next time
     m_icyReader->stop();
     m_player->stop();
     m_player->setSource(QUrl()); // clear stale source so next setSourceDevice is a fresh start
@@ -402,6 +440,7 @@ void RadioBackend::attemptReconnect()
         return;
 
     qDebug() << "Attempting reconnect to" << m_currentUrl;
+    m_stallTimer.stop();
     m_icyReader->stop();
     m_player->stop();
     m_player->setSource(QUrl());
@@ -411,7 +450,7 @@ void RadioBackend::attemptReconnect()
         m_buffering = true;
         Q_EMIT bufferingChanged();
     }
-    m_icyReader->start(QUrl(m_currentUrl));
+    m_icyReader->start(QUrl(m_currentUrl), m_prerollMs);
 }
 
 void RadioBackend::emitMprisPropertiesChanged(const QString &interface, const QVariantMap &changedProperties)

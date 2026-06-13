@@ -162,6 +162,19 @@ private:
     static constexpr int RECONNECT_MAX_MS = 30000;
     static constexpr int RECONNECT_MAX_ATTEMPTS = 10;
 
+    // Watchdog for buffer underruns: QMediaPlayer's backend can stall on a
+    // starved source device and never recover on its own, so if it stays
+    // stalled/re-buffering past this timeout we force a clean reconnect.
+    QTimer m_stallTimer;
+    static constexpr int STALL_TIMEOUT_MS = 7000;
+
+    // Adaptive pre-roll: start streams thin for a fast start, and if they keep
+    // underrunning, escalate the pre-buffer duration on each stall-reconnect
+    // until playback holds. Reset to the initial value on stop / station change.
+    static constexpr int PREROLL_INITIAL_MS = 2000;
+    static constexpr int PREROLL_MAX_MS = 16000;
+    int m_prerollMs = PREROLL_INITIAL_MS;
+
     void emitMprisPropertiesChanged(const QString &interface, const QVariantMap &changedProperties);
     void takeSleepInhibitLock();
     void releaseSleepInhibitLock();
