@@ -30,6 +30,7 @@ Item {
                 
                 PlasmaComponents.Label {
                     text: root.isLocating ? "Locating Station..." : (root.isFixing ? "Finding new stream..." : (root.isPlaying ? "Playing: " + root.currentStationName : (root.isBroken ? "Stream Offline" : "Plasma Radio")))
+                    textFormat: Text.PlainText
                     font.weight: Font.Bold
                     Layout.fillWidth: true
                 }
@@ -62,6 +63,7 @@ Item {
                         }
                         return subText;
                     }
+                    textFormat: Text.PlainText
                     opacity: 0.7
                     Layout.fillWidth: true
                 }

@@ -58,6 +58,7 @@ Item {
     PlasmaComponents.Label {
         id: cityWidthHelper
         text: root.currentStationCity
+        textFormat: Text.PlainText
         visible: false
         font.pointSize: Kirigami.Theme.smallFont.pointSize * 0.9
         font.weight: Font.Normal
@@ -117,6 +118,7 @@ Item {
             PlasmaComponents.Label {
                 id: stationNameLabel
                 text: root.currentStationName
+                textFormat: Text.PlainText
                 font.weight: Font.Bold
                 font.pointSize: Kirigami.Theme.smallFont.pointSize
                 Layout.fillWidth: true
@@ -135,6 +137,7 @@ Item {
             PlasmaComponents.Label {
                 id: subtitleLabel
                 text: compactRoot.subtitleText
+                textFormat: Text.PlainText
                 opacity: 0.7
                 font.pointSize: Kirigami.Theme.smallFont.pointSize * 0.9
                 

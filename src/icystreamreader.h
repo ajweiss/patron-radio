@@ -8,7 +8,6 @@
 #include <QUrl>
 #include <QString>
 #include <QMutex>
-#include <QWaitCondition>
 
 class IcyStreamReader : public QIODevice
 {
@@ -41,7 +40,13 @@ private:
 
     QNetworkAccessManager m_nam;
     QNetworkReply *m_reply;
+
+    // m_audioBuffer is produced on the thread that drives processData() (the
+    // main/GUI thread, via the reply's readyRead signal) and consumed from the
+    // QtMultimedia backend thread through readData(). All access must hold the
+    // mutex. mutable so the const query overrides can lock it.
     QByteArray m_audioBuffer;
+    mutable QMutex m_bufferMutex;
 
     int m_metaInt;
     int m_audioBytesRead;

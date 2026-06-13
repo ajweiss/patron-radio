@@ -1,5 +1,6 @@
 #include "icystreamreader.h"
 #include <QNetworkRequest>
+#include <QMutexLocker>
 #include <QDebug>
 
 static constexpr int READY_THRESHOLD = 128 * 1024;   // 128KB before playback
@@ -26,7 +27,10 @@ void IcyStreamReader::start(const QUrl &url)
 
     m_reply = m_nam.get(request);
 
-    m_audioBuffer.clear();
+    {
+        QMutexLocker locker(&m_bufferMutex);
+        m_audioBuffer.clear();
+    }
     m_metaBuffer.clear();
     m_audioBytesRead = 0;
     m_metaBytesLeft = 0;
@@ -46,12 +50,16 @@ void IcyStreamReader::stop()
         m_reply->deleteLater();
         m_reply = nullptr;
     }
-    m_audioBuffer.clear();
+    {
+        QMutexLocker locker(&m_bufferMutex);
+        m_audioBuffer.clear();
+    }
     m_readyToPlayEmitted = false;
 }
 
 qint64 IcyStreamReader::readData(char *data, qint64 maxlen)
 {
+    QMutexLocker locker(&m_bufferMutex);
     qint64 bytesToRead = qMin((qint64)m_audioBuffer.size(), maxlen);
     if (bytesToRead > 0) {
         memcpy(data, m_audioBuffer.constData(), bytesToRead);
@@ -73,6 +81,7 @@ bool IcyStreamReader::isSequential() const
 
 qint64 IcyStreamReader::bytesAvailable() const
 {
+    QMutexLocker locker(&m_bufferMutex);
     return m_audioBuffer.size() + QIODevice::bytesAvailable();
 }
 
@@ -81,7 +90,14 @@ bool IcyStreamReader::atEnd() const
     if (m_reply && !m_reply->isFinished()) {
         return false;
     }
-    return m_audioBuffer.isEmpty() && QIODevice::atEnd();
+    bool bufferEmpty;
+    {
+        QMutexLocker locker(&m_bufferMutex);
+        bufferEmpty = m_audioBuffer.isEmpty();
+    }
+    // QIODevice::atEnd() calls the virtual bytesAvailable(), which re-locks the
+    // mutex, so it must run *after* we release ours (the mutex is non-recursive).
+    return bufferEmpty && QIODevice::atEnd();
 }
 
 void IcyStreamReader::onFinished()
@@ -113,75 +129,92 @@ void IcyStreamReader::processData()
     if (!m_reply) return;
 
     bool hasNewAudio = false;
+    bool hasNewTitle = false;
+    QString newTitle;
+    int audioBufferSize = 0;
 
-    while (m_reply->bytesAvailable() > 0) {
-        if (m_metaInt <= 0) {
-            m_audioBuffer.append(m_reply->readAll());
-            hasNewAudio = true;
-            break;
-        }
+    // Hold the buffer lock only while touching m_audioBuffer; the title is
+    // captured and signals are emitted *after* unlocking, because their slots
+    // re-enter this device (readData on the backend thread, setSourceDevice in
+    // the readyToPlay handler) and the mutex is non-recursive.
+    {
+        QMutexLocker locker(&m_bufferMutex);
 
-        if (m_state == StateAudio) {
-            qint64 toRead = qMin((qint64)(m_metaInt - m_audioBytesRead), m_reply->bytesAvailable());
-            if (toRead > 0) {
-                QByteArray audioChunk = m_reply->read(toRead);
-                m_audioBuffer.append(audioChunk);
-                m_audioBytesRead += audioChunk.size();
+        while (m_reply->bytesAvailable() > 0) {
+            if (m_metaInt <= 0) {
+                m_audioBuffer.append(m_reply->readAll());
                 hasNewAudio = true;
+                break;
             }
 
-            if (m_audioBytesRead == m_metaInt) {
-                m_state = StateMetaLength;
-                m_audioBytesRead = 0;
-            }
-        } else if (m_state == StateMetaLength) {
-            char lengthByte;
-            if (m_reply->read(&lengthByte, 1) == 1) {
-                m_metaBytesLeft = static_cast<unsigned char>(lengthByte) * 16;
-                if (m_metaBytesLeft > 0) {
-                    m_state = StateMetaData;
-                    m_metaBuffer.clear();
-                } else {
+            if (m_state == StateAudio) {
+                qint64 toRead = qMin((qint64)(m_metaInt - m_audioBytesRead), m_reply->bytesAvailable());
+                if (toRead > 0) {
+                    QByteArray audioChunk = m_reply->read(toRead);
+                    m_audioBuffer.append(audioChunk);
+                    m_audioBytesRead += audioChunk.size();
+                    hasNewAudio = true;
+                }
+
+                if (m_audioBytesRead == m_metaInt) {
+                    m_state = StateMetaLength;
+                    m_audioBytesRead = 0;
+                }
+            } else if (m_state == StateMetaLength) {
+                char lengthByte;
+                if (m_reply->read(&lengthByte, 1) == 1) {
+                    m_metaBytesLeft = static_cast<unsigned char>(lengthByte) * 16;
+                    if (m_metaBytesLeft > 0) {
+                        m_state = StateMetaData;
+                        m_metaBuffer.clear();
+                    } else {
+                        m_state = StateAudio;
+                    }
+                }
+            } else if (m_state == StateMetaData) {
+                qint64 toRead = qMin((qint64)m_metaBytesLeft, m_reply->bytesAvailable());
+                if (toRead > 0) {
+                    QByteArray metaChunk = m_reply->read(toRead);
+                    m_metaBuffer.append(metaChunk);
+                    m_metaBytesLeft -= metaChunk.size();
+                }
+
+                if (m_metaBytesLeft == 0) {
+                    QString metaStr = QString::fromUtf8(m_metaBuffer);
+                    int titleStart = metaStr.indexOf(QStringLiteral("StreamTitle='"));
+                    if (titleStart != -1) {
+                        titleStart += 13;
+                        int titleEnd = metaStr.indexOf(QStringLiteral("';"), titleStart);
+                        if (titleEnd != -1) {
+                            QString title = metaStr.mid(titleStart, titleEnd - titleStart);
+                            if (title != m_lastTitle) {
+                                m_lastTitle = title;
+                                hasNewTitle = true;
+                                newTitle = title;
+                            }
+                        }
+                    }
                     m_state = StateAudio;
                 }
             }
-        } else if (m_state == StateMetaData) {
-            qint64 toRead = qMin((qint64)m_metaBytesLeft, m_reply->bytesAvailable());
-            if (toRead > 0) {
-                QByteArray metaChunk = m_reply->read(toRead);
-                m_metaBuffer.append(metaChunk);
-                m_metaBytesLeft -= metaChunk.size();
-            }
-
-            if (m_metaBytesLeft == 0) {
-                QString metaStr = QString::fromUtf8(m_metaBuffer);
-                int titleStart = metaStr.indexOf(QStringLiteral("StreamTitle='"));
-                if (titleStart != -1) {
-                    titleStart += 13;
-                    int titleEnd = metaStr.indexOf(QStringLiteral("';"), titleStart);
-                    if (titleEnd != -1) {
-                        QString title = metaStr.mid(titleStart, titleEnd - titleStart);
-                        if (title != m_lastTitle) {
-                            m_lastTitle = title;
-                            Q_EMIT streamTitleChanged(title);
-                        }
-                    }
-                }
-                m_state = StateAudio;
-            }
         }
+
+        if (m_audioBuffer.size() > MAX_BUFFER) {
+            m_audioBuffer.remove(0, m_audioBuffer.size() - MAX_BUFFER);
+        }
+        audioBufferSize = m_audioBuffer.size();
     }
 
-    if (m_audioBuffer.size() > MAX_BUFFER) {
-        m_audioBuffer.remove(0, m_audioBuffer.size() - MAX_BUFFER);
+    if (hasNewTitle) {
+        Q_EMIT streamTitleChanged(newTitle);
     }
 
     if (hasNewAudio) {
         Q_EMIT readyRead();
     }
-    
+
     // Defer handing the device over to QMediaPlayer until we have an initial buffer
-    if (!m_readyToPlayEmitted && m_audioBuffer.size() > READY_THRESHOLD) {
+    if (!m_readyToPlayEmitted && audioBufferSize > READY_THRESHOLD) {
         m_readyToPlayEmitted = true;
         Q_EMIT readyToPlay();
     }

@@ -28,14 +28,16 @@ PlasmaExtras.Representation {
                 
                 PlasmaComponents.Label {
                     text: root.currentStationName
+                    textFormat: Text.PlainText
                     font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.5
                     font.weight: Font.Bold
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
                 }
-                
+
                 PlasmaComponents.Label {
                     text: root.currentTrack !== "" ? root.currentTrack : root.currentStationCity
+                    textFormat: Text.PlainText
                     opacity: 0.7
                     Layout.fillWidth: true
                     wrapMode: Text.Wrap
@@ -68,7 +70,7 @@ PlasmaExtras.Representation {
                         if (url !== "") {
                             url += url.indexOf("?") > -1 ? "&" : "?";
                             url += "source=plasma_radio";
-                            Qt.openUrlExternally(url);
+                            root.openExternalUrl(url);
                         }
                     }
                     hoverEnabled: true
@@ -86,7 +88,7 @@ PlasmaExtras.Representation {
                         if (url !== "") {
                             url += url.indexOf("?") > -1 ? "&" : "?";
                             url += "source=plasma_radio";
-                            Qt.openUrlExternally(url);
+                            root.openExternalUrl(url);
                         }
                     }
                     hoverEnabled: true
@@ -159,6 +161,7 @@ PlasmaExtras.Representation {
 
                             PlasmaComponents.Label {
                                 text: isAutoLocalItem ? (root.isLocating ? "Locating..." : "Play Nearest Station") : stationModel.get(actualStationIndex).name
+                                textFormat: Text.PlainText
                                 font.weight: isCurrentStation ? Font.Bold : Font.Normal
                                 Layout.fillWidth: true
                                 elide: Text.ElideRight
@@ -167,6 +170,7 @@ PlasmaExtras.Representation {
                             PlasmaComponents.Label {
                                 visible: !isAutoLocalItem
                                 text: !isAutoLocalItem ? stationModel.get(actualStationIndex).city : ""
+                                textFormat: Text.PlainText
                                 opacity: 0.7
                                 font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                                 Layout.fillWidth: true

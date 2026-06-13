@@ -23,7 +23,12 @@ Item {
                         var foundUrl = "";
                         for (var i = 0; i < response.length; i++) {
                             var codec = (response[i].codec || "").toUpperCase();
-                            if (codec === "MP3" || codec === "AAC" || codec === "AAC+") { foundUrl = response[i].url; break; }
+                            var candidateUrl = response[i].url || "";
+                            // Results come from a public, community-editable directory:
+                            // only accept http(s) so a malicious entry can't smuggle in
+                            // file:// or other schemes.
+                            if (!/^https?:\/\//i.test(candidateUrl)) continue;
+                            if (codec === "MP3" || codec === "AAC" || codec === "AAC+") { foundUrl = candidateUrl; break; }
                         }
                         if (foundUrl !== "") {
                             root.stationModel.setProperty(root.currentStationIndex, "url", foundUrl);

@@ -162,6 +162,21 @@ void RadioBackend::setCurrentStationName(const QString &name)
 
 void RadioBackend::setCurrentUrl(const QString &url)
 {
+    // Stream URLs can originate from an untrusted, community-editable directory
+    // (radio-browser.info via the "Fix" tool). Only allow http/https so a
+    // malicious entry cannot coerce QNetworkAccessManager into reading local
+    // files (file://) or probing other schemes.
+    if (!url.isEmpty()) {
+        const QUrl parsed(url);
+        const QString scheme = parsed.scheme().toLower();
+        if (!parsed.isValid() || (scheme != QLatin1String("http") && scheme != QLatin1String("https"))) {
+            qDebug() << "Refusing non-HTTP(S) stream URL:" << url;
+            m_lastError = QStringLiteral("Refused unsupported stream URL");
+            Q_EMIT lastErrorChanged();
+            return;
+        }
+    }
+
     if (m_currentUrl != url) {
         // Stop playback and clear old buffers before switching streams
         m_player->stop();

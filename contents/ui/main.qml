@@ -162,6 +162,17 @@ PlasmoidItem {
     function fixCurrentStream() { stationApi.fixCurrentStream(); }
     function playClosestStation() { stationApi.playClosestStation(); }
 
+    // Station website/donate links come from (potentially user-edited) config.
+    // Only hand http(s) URLs to the desktop URL handler so a malformed entry
+    // can't launch an arbitrary URI-scheme handler.
+    function openExternalUrl(url) {
+        if (typeof url !== "string" || !/^https?:\/\//i.test(url)) {
+            console.warn("Patron Radio: refusing to open non-HTTP(S) URL:", url);
+            return;
+        }
+        Qt.openUrlExternally(url);
+    }
+
     // --- Station Data ---
     ListModel { id: stationModel }
 

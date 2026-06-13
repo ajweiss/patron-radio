@@ -47,7 +47,7 @@ Item {
             var donateAction = actionFactory.createAction();
             donateAction.text = "Support this Station (Donate)";
             donateAction.icon.name = "help-donate";
-            donateAction.triggered.connect(function() { Qt.openUrlExternally(root.currentStationDonate); });
+            donateAction.triggered.connect(function() { root.openExternalUrl(root.currentStationDonate); });
             actions.push(donateAction);
         }
 
@@ -55,7 +55,7 @@ Item {
             var webAction = actionFactory.createAction();
             webAction.text = "Station Website / Playlist";
             webAction.icon.name = "view-media-playlist";
-            webAction.triggered.connect(function() { Qt.openUrlExternally(root.currentStationWebsite); });
+            webAction.triggered.connect(function() { root.openExternalUrl(root.currentStationWebsite); });
             actions.push(webAction);
         }
 
