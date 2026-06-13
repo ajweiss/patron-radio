@@ -18,8 +18,6 @@ Item {
     property alias cfg_resumePlaybackOnRestart: resumePlaybackCheckbox.checked
     property alias cfg_pauseOnBtDisconnect: pauseOnBtDisconnectCheckbox.checked
     property alias cfg_inhibitSleep: inhibitSleepCheckbox.checked
-    property alias cfg_normalizeLoudness: normalizeLoudnessCheckbox.checked
-    property alias cfg_loudnessAuto: loudnessAutoCheckbox.checked
 
     // JSON configuration strings
     property string cfg_autoplayBluetoothDevices: "[]"
@@ -185,20 +183,16 @@ Item {
         Kirigami.Heading { text: "Behavior Settings"; level: 1; Layout.fillWidth: true; Layout.bottomMargin: Kirigami.Units.largeSpacing }
 
         Kirigami.Heading { text: "Startup & Playback"; level: 4; Layout.fillWidth: true }
-        
+        PlasmaComponents.Label {
+            text: "What Patron Radio does when your session starts and while you listen."
+            opacity: 0.7; font.pointSize: Kirigami.Theme.smallFont.pointSize; wrapMode: Text.WordWrap; Layout.fillWidth: true
+        }
+
         PlasmaComponents.CheckBox { id: autoplayCheckbox; text: "Start playing automatically on system login"; Layout.leftMargin: Kirigami.Units.largeSpacing }
         PlasmaComponents.CheckBox { id: autoLocalCheckbox; text: "Select closest local station on startup"; Layout.leftMargin: Kirigami.Units.largeSpacing }
         PlasmaComponents.CheckBox { id: resumePlaybackCheckbox; text: "Automatically resume playback if active when last closed"; Layout.leftMargin: Kirigami.Units.largeSpacing }
         PlasmaComponents.CheckBox { id: pauseOnBtDisconnectCheckbox; text: "Pause playback when active audio device disconnects"; Layout.leftMargin: Kirigami.Units.largeSpacing }
         PlasmaComponents.CheckBox { id: inhibitSleepCheckbox; text: "Prevent system sleep while playing"; Layout.leftMargin: Kirigami.Units.largeSpacing }
-        PlasmaComponents.CheckBox { id: normalizeLoudnessCheckbox; text: "Normalize loudness across stations"; Layout.leftMargin: Kirigami.Units.largeSpacing }
-        PlasmaComponents.CheckBox {
-            id: loudnessAutoCheckbox
-            text: "Measure levels automatically"
-            enabled: normalizeLoudnessCheckbox.checked
-            Layout.leftMargin: Kirigami.Units.largeSpacing
-            PlasmaComponents.ToolTip { text: "When off, the per-station adjustments in the Stations tab become editable and are never overwritten." }
-        }
 
         Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.largeSpacing; Layout.bottomMargin: Kirigami.Units.largeSpacing }
 
