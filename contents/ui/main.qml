@@ -198,6 +198,12 @@ PlasmoidItem {
     }
 
     function loadStations() {
+        // currentStationIndex is positional, but the list can be reordered in
+        // settings (new stations insert at the top, deletes shift everything).
+        // Remember the current station by URL so it stays selected across reloads
+        // instead of the index silently pointing at a different station.
+        var prevUrl = hasCurrentStation ? stationModel.get(currentStationIndex).url : "";
+
         stationModel.clear();
         try {
             var stations = JSON.parse(Plasmoid.configuration.stationsJson || "[]");
@@ -209,6 +215,12 @@ PlasmoidItem {
                 stationModel.append(s);
             }
         } catch (e) {}
+
+        if (prevUrl) {
+            for (var k = 0; k < stationModel.count; k++) {
+                if (stationModel.get(k).url === prevUrl) { currentStationIndex = k; break; }
+            }
+        }
         if (currentStationIndex >= stationModel.count) currentStationIndex = 0;
     }
 
