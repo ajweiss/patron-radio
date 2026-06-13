@@ -2,7 +2,7 @@
 
 Patron Radio is a native KDE Plasma 6 panel widget for streaming independent and public radio stations. It was built to scratch an itch -- there was no simple, well-integrated way to listen to internet radio directly from the Plasma panel. Rather than running a full media player for something that should be a one-click action, Patron Radio brings station streaming into the desktop as a compact quality-of-life widget.
 
-![Patron Radio](https://raw.githubusercontent.com/signal11/patron-radio/main/screenshot.png) *(Placeholder for future screenshot)*
+![Patron Radio](screenshot.png)
 
 ## Project Genesis
 
