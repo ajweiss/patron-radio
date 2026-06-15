@@ -7,6 +7,11 @@ import "../imports/com/signal11/patronradio" as RadioBackendModule
 Item {
     id: contextActions
 
+    // The single source of truth for the widget's actions. Assigned to the
+    // panel right-click menu (Plasmoid.contextualActions) and also consumed by
+    // the popup's overflow menu, so the two stay in sync automatically.
+    property var actionList: []
+
     Item {
         id: actionFactory
         function createAction() { return actionComponent.createObject(actionFactory); }
@@ -102,5 +107,6 @@ Item {
 
         actions.push(actionFactory.createSeparator());
         Plasmoid.contextualActions = actions;
+        contextActions.actionList = actions;
     }
 }
