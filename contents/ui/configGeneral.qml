@@ -347,7 +347,7 @@ Item {
                                         HoverHandler { id: levelHover }
                                         PlasmaComponents.ToolTip {
                                             visible: levelHover.hovered
-                                            text: "Turn off \"Measure levels automatically\" (Behavior tab) to set this manually."
+                                            text: "Turn off \"Measure levels automatically\" (Loudness tab) to set this manually."
                                         }
                                     }
 
