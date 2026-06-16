@@ -306,6 +306,24 @@ void RadioBackend::setLoudnessAuto(bool on)
     Q_EMIT loudnessAutoChanged();
 }
 
+void RadioBackend::setSharedStations(const QString &json)
+{
+    // Pure relay between instances; no audio side effects. Equality guard stops
+    // the broadcast from echoing back through every instance that adopts it.
+    if (m_sharedStations == json)
+        return;
+    m_sharedStations = json;
+    Q_EMIT sharedStationsChanged();
+}
+
+void RadioBackend::setSharedSettings(const QString &json)
+{
+    if (m_sharedSettings == json)
+        return;
+    m_sharedSettings = json;
+    Q_EMIT sharedSettingsChanged();
+}
+
 void RadioBackend::setNormalizeLoudness(bool on)
 {
     if (m_normalizeLoudness == on)

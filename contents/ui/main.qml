@@ -127,6 +127,13 @@ PlasmoidItem {
                 root.playStation((root.currentStationIndex - 1 + stationModel.count) % stationModel.count);
             }
         }
+        // Layer A: the backend is shared across instances, so follow whatever it's
+        // actually playing — even when another instance changed the station.
+        function onCurrentUrlChanged() { root.followCurrentUrl(); }
+        // Another instance broadcast an edited station list; adopt it.
+        function onSharedStationsChanged() { root.adoptSharedStations(); }
+        // Another instance broadcast a backend-toggle change; adopt it.
+        function onSharedSettingsChanged() { root.adoptSharedSettings(); }
     }
 
     Connections {
@@ -137,7 +144,13 @@ PlasmoidItem {
     Connections {
         target: Plasmoid.configuration
         function onAutoLocalStationChanged() { if (Plasmoid.configuration.autoLocalStation) stationApi.updateClosestStation(false); }
-        function onStationsJsonChanged() { root.syncStations(); }
+        function onStationsJsonChanged() {
+            root.syncStations();
+            root.broadcastStationsIfEdited();
+        }
+        function onNormalizeLoudnessChanged() { root.broadcastSettingsIfEdited(); }
+        function onLoudnessAutoChanged() { root.broadcastSettingsIfEdited(); }
+        function onInhibitSleepChanged() { root.broadcastSettingsIfEdited(); }
     }
 
     // --- Playback Control ---
@@ -319,6 +332,96 @@ PlasmoidItem {
     Timer { id: saveStationsTimer; interval: 4000; onTriggered: root.saveStations() }
     function persistStationsSoon() { saveStationsTimer.restart(); }
 
+    // --- Cross-instance sync (Layer A + broadcast bus) ---
+
+    // Point currentStationIndex at whatever the shared backend is playing, so the
+    // header, highlight and now-playing follow even when another instance switched.
+    function followCurrentUrl() {
+        var url = RadioBackendModule.RadioBackend.currentUrl;
+        if (!url) return;
+        for (var i = 0; i < stationModel.count; i++) {
+            if (stationModel.get(i).url === url) {
+                if (currentStationIndex !== i) {
+                    currentStationIndex = i;
+                    clearTrackHistory();   // history belonged to the previous station
+                    currentTrack = "";
+                }
+                return;
+            }
+        }
+        // URL isn't in this instance's list (divergent config): leave the index be;
+        // the now-playing track still updates from streamTitle.
+    }
+
+    // Compare two station-list JSONs ignoring per-station loudness, which each
+    // instance learns independently (and already shares via measuredLoudness).
+    function sameStationsIgnoringLoudness(aJson, bJson) {
+        var a, b;
+        try { a = JSON.parse(aJson || "[]"); b = JSON.parse(bJson || "[]"); }
+        catch (e) { return false; }
+        if (a.length !== b.length) return false;
+        var keys = ["name", "city", "url", "website", "donate", "icon", "lat", "lon"];
+        for (var i = 0; i < a.length; i++) {
+            for (var k = 0; k < keys.length; k++) {
+                var av = a[i][keys[k]]; if (av === undefined) av = "";
+                var bv = b[i][keys[k]]; if (bv === undefined) bv = "";
+                if (av !== bv) return false;
+            }
+        }
+        return true;
+    }
+
+    // Relay a local (user) edit to the other instances. Skips loudness-only writes
+    // (the periodic auto-save) and the echo from adopting someone else's broadcast.
+    function broadcastStationsIfEdited() {
+        var local = Plasmoid.configuration.stationsJson;
+        var shared = RadioBackendModule.RadioBackend.sharedStations;
+        if (local === shared) return;                            // echo of an adopted broadcast
+        if (sameStationsIgnoringLoudness(local, shared)) return; // loudness-only drift
+        RadioBackendModule.RadioBackend.sharedStations = local;
+    }
+
+    // Adopt a station list another instance broadcast (structural edits only).
+    function adoptSharedStations() {
+        var shared = RadioBackendModule.RadioBackend.sharedStations;
+        if (!shared) return;
+        var local = Plasmoid.configuration.stationsJson;
+        if (shared === local) return;
+        if (sameStationsIgnoringLoudness(shared, local)) return; // keep our learned loudness
+        Plasmoid.configuration.stationsJson = shared;            // -> onStationsJsonChanged -> syncStations
+    }
+
+    // The backend-governing toggles, as a stable-keyed blob for the bus.
+    function settingsJson() {
+        return JSON.stringify({
+            "normalizeLoudness": Plasmoid.configuration.normalizeLoudness,
+            "loudnessAuto": Plasmoid.configuration.loudnessAuto,
+            "inhibitSleep": Plasmoid.configuration.inhibitSleep
+        });
+    }
+
+    // Relay a local toggle change to the other instances. The equality guard
+    // also absorbs the echo from adopting someone else's broadcast.
+    function broadcastSettingsIfEdited() {
+        var local = settingsJson();
+        if (local === RadioBackendModule.RadioBackend.sharedSettings) return;
+        RadioBackendModule.RadioBackend.sharedSettings = local;
+    }
+
+    // Adopt backend toggles another instance broadcast.
+    function adoptSharedSettings() {
+        var shared = RadioBackendModule.RadioBackend.sharedSettings;
+        if (!shared) return;
+        var s;
+        try { s = JSON.parse(shared); } catch (e) { return; }
+        if (typeof s.normalizeLoudness === "boolean" && Plasmoid.configuration.normalizeLoudness !== s.normalizeLoudness)
+            Plasmoid.configuration.normalizeLoudness = s.normalizeLoudness;
+        if (typeof s.loudnessAuto === "boolean" && Plasmoid.configuration.loudnessAuto !== s.loudnessAuto)
+            Plasmoid.configuration.loudnessAuto = s.loudnessAuto;
+        if (typeof s.inhibitSleep === "boolean" && Plasmoid.configuration.inhibitSleep !== s.inhibitSleep)
+            Plasmoid.configuration.inhibitSleep = s.inhibitSleep;
+    }
+
     // --- Initialization ---
     Binding {
         target: RadioBackendModule.RadioBackend
@@ -340,6 +443,33 @@ PlasmoidItem {
         loadStations();
         audioRouter.applyBestAudioRouting();
         contextActions.update();
+
+        // Cross-instance station list: adopt a list a live instance already
+        // broadcast, or seed the bus if we're the first instance up.
+        var shared = RadioBackendModule.RadioBackend.sharedStations;
+        if (shared && !sameStationsIgnoringLoudness(shared, Plasmoid.configuration.stationsJson)) {
+            adoptSharedStations();
+        } else if (!shared) {
+            RadioBackendModule.RadioBackend.sharedStations = Plasmoid.configuration.stationsJson;
+        }
+
+        // Same dance for the backend toggles.
+        var sharedSet = RadioBackendModule.RadioBackend.sharedSettings;
+        if (sharedSet && sharedSet !== settingsJson()) {
+            adoptSharedSettings();
+        } else if (!sharedSet) {
+            RadioBackendModule.RadioBackend.sharedSettings = settingsJson();
+        }
+
+        // If the shared backend is already playing (another instance started it),
+        // sync to it and skip our own startup autoplay.
+        if (RadioBackendModule.RadioBackend.playing || RadioBackendModule.RadioBackend.buffering) {
+            followCurrentUrl();
+            var nowT = RadioBackendModule.RadioBackend.streamTitle;
+            if (nowT) currentTrack = nowT;
+            playbackState = RadioBackendModule.RadioBackend.playing ? statePlaying : stateBuffering;
+            return;
+        }
 
         var autoLocal = Plasmoid.configuration.autoLocalStation;
         var autoPlay = Plasmoid.configuration.autoplayOnStartup;

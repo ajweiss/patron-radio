@@ -41,6 +41,14 @@ class RadioBackend : public QObject
     Q_PROPERTY(double loudnessTarget READ loudnessTarget CONSTANT) // normalization target (LUFS)
     // When false, levels aren't measured — stored/manual loudness values are applied but never overwritten.
     Q_PROPERTY(bool loudnessAuto READ loudnessAuto WRITE setLoudnessAuto NOTIFY loudnessAutoChanged)
+    // Cross-instance station-list sync. The backend is a singleton shared by every
+    // applet instance in the same process, so it doubles as a broadcast bus: an
+    // instance writes a user-edited station list here and the others adopt it.
+    // KConfig stays each instance's persistent cache. Holds the stations JSON.
+    Q_PROPERTY(QString sharedStations READ sharedStations WRITE setSharedStations NOTIFY sharedStationsChanged)
+    // Same bus for the toggles that govern the (shared) backend — normalization,
+    // loudness auto-learn, sleep inhibit. Holds a small JSON blob of those values.
+    Q_PROPERTY(QString sharedSettings READ sharedSettings WRITE setSharedSettings NOTIFY sharedSettingsChanged)
 
     QML_ELEMENT
     QML_SINGLETON
@@ -81,6 +89,12 @@ public:
     double loudnessTarget() const { return LOUDNESS_TARGET_LUFS; }
     bool loudnessAuto() const { return m_loudnessAuto; }
     void setLoudnessAuto(bool on);
+
+    QString sharedStations() const { return m_sharedStations; }
+    void setSharedStations(const QString &json);
+
+    QString sharedSettings() const { return m_sharedSettings; }
+    void setSharedSettings(const QString &json);
 
     // Loudness math, factored out as pure functions so they can be unit-tested
     // without an audio pipeline. attenuationGainDb returns the gain (always <= 0,
@@ -172,6 +186,8 @@ Q_SIGNALS:
     void normalizeLoudnessChanged();
     void measuredLoudnessChanged();
     void loudnessAutoChanged();
+    void sharedStationsChanged();
+    void sharedSettingsChanged();
 
 private:
     QMediaPlayer *m_player;
@@ -213,6 +229,8 @@ private:
     double m_normGainDb = 0.0;        // currently applied attenuation, <= 0
     bool m_normalizeLoudness = true;
     bool m_loudnessAuto = true;       // measure & refine loudness vs. apply stored values only
+    QString m_sharedStations;         // last station list broadcast across instances
+    QString m_sharedSettings;         // last backend-toggle blob broadcast across instances
     QTimer m_loudnessTimer;
     static constexpr double kNaN = std::numeric_limits<double>::quiet_NaN();
     double m_seedLoudness = kNaN;        // last-known loudness for the current station (from config)
