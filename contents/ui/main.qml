@@ -84,7 +84,9 @@ PlasmoidItem {
     Connections {
         target: RadioBackendModule.RadioBackend
         function onStreamTitleChanged() {
-            root.currentTrack = RadioBackendModule.RadioBackend.streamTitle;
+            var t = RadioBackendModule.RadioBackend.streamTitle;
+            root.currentTrack = t;          // header updates immediately
+            root.queueTrack(t);             // history is debounced (see below)
         }
         function onLastErrorChanged() {
             var err = RadioBackendModule.RadioBackend.lastError;
@@ -135,7 +137,7 @@ PlasmoidItem {
     Connections {
         target: Plasmoid.configuration
         function onAutoLocalStationChanged() { if (Plasmoid.configuration.autoLocalStation) stationApi.updateClosestStation(false); }
-        function onStationsJsonChanged() { root.loadStations(); }
+        function onStationsJsonChanged() { root.syncStations(); }
     }
 
     // --- Playback Control ---
@@ -147,6 +149,7 @@ PlasmoidItem {
             Plasmoid.configuration.wasPlaying = false;
         } else {
             userRequestedPlayback = true;
+            clearTrackHistory();
             playbackState = stateBuffering;
             var station = stationModel.get(currentStationIndex);
             RadioBackendModule.RadioBackend.currentStationName = station.name;
@@ -162,6 +165,7 @@ PlasmoidItem {
         if (currentStationIndex !== index || (!isPlaying && !isBroken)) {
             userRequestedPlayback = true;
             currentStationIndex = index;
+            clearTrackHistory();
             currentTrack = "";
             streamCodec = "";
             streamBitrate = "";
@@ -192,6 +196,50 @@ PlasmoidItem {
     // --- Station Data ---
     ListModel { id: stationModel }
 
+    // --- Now-playing track history (the "playlist" for live radio) ---
+    // Built from the stream's ICY StreamTitle changes; index 0 is the current
+    // track. Reset whenever the station changes.
+    ListModel { id: trackHistory }
+    property string _lastHistTrack: ""
+    property string _pendingTrack: ""
+
+    // Defer committing a title to the history until it has been the current track
+    // for a while. Real songs persist for minutes; transient between-song station
+    // IDs/banners flash for a few seconds and get filtered out this way.
+    Timer {
+        id: histCommitTimer
+        interval: 20000
+        onTriggered: root.commitTrack(root._pendingTrack)
+    }
+    function queueTrack(title) {
+        _pendingTrack = title;
+        if (title) histCommitTimer.restart(); else histCommitTimer.stop();
+    }
+    function commitTrack(title) {
+        if (!title || title === _lastHistTrack) return;
+        if (title === root.currentStationName) return; // station name as title, not a song
+        _lastHistTrack = title;
+        trackHistory.insert(0, { "title": title, "at": Date.now() });
+        while (trackHistory.count > 12) trackHistory.remove(trackHistory.count - 1);
+    }
+    function clearTrackHistory() {
+        trackHistory.clear();
+        _lastHistTrack = "";
+        _pendingTrack = "";
+        histCommitTimer.stop();
+    }
+
+    // Drives relative timestamps ("2m") in the popup; only ticks while it's open.
+    property double histNow: Date.now()
+    Timer { interval: 30000; repeat: true; running: root.expanded; onTriggered: root.histNow = Date.now() }
+    function relTime(at) {
+        var s = Math.max(0, Math.floor((root.histNow - at) / 1000));
+        if (s < 60) return "now";
+        var m = Math.floor(s / 60);
+        if (m < 60) return m + "m";
+        return Math.floor(m / 60) + "h";
+    }
+
     // Per-station loudness (LUFS) for normalization. NaN means "not measured yet".
     function stationLoudness(st) {
         return (st && typeof st.loudness === "number" && !isNaN(st.loudness)) ? st.loudness : NaN;
@@ -209,8 +257,7 @@ PlasmoidItem {
             var stations = JSON.parse(Plasmoid.configuration.stationsJson || "[]");
             for (var i = 0; i < stations.length; i++) {
                 var s = stations[i];
-                // Ensure the 'loudness' role always exists (ListModel fixes roles
-                // from the first row) so we can setProperty it later.
+                // Ensure the 'loudness' role exists (ListModel fixes roles from row 0).
                 if (typeof s.loudness !== "number") s.loudness = NaN;
                 stationModel.append(s);
             }
@@ -222,6 +269,35 @@ PlasmoidItem {
             }
         }
         if (currentStationIndex >= stationModel.count) currentStationIndex = 0;
+    }
+
+    // Apply an external stationsJson change. If the station set + order is
+    // unchanged (e.g. the widget's own loudness auto-save, or an in-popup edit),
+    // update fields in place — a full clear+rebuild momentarily empties the model
+    // and resets the popup list's selection. Only the rare structural change
+    // (add/delete/reorder/url edit) does a full reload.
+    function syncStations() {
+        var stations;
+        try { stations = JSON.parse(Plasmoid.configuration.stationsJson || "[]"); }
+        catch (e) { return; }
+
+        var sameShape = (stations.length === stationModel.count);
+        for (var i = 0; sameShape && i < stations.length; i++) {
+            if (stationModel.get(i).url !== stations[i].url) sameShape = false;
+        }
+        if (!sameShape) { loadStations(); return; }
+
+        for (var j = 0; j < stations.length; j++) {
+            var s = stations[j];
+            var m = stationModel.get(j);
+            var lo = (typeof s.loudness === "number") ? s.loudness : NaN;
+            if (!(m.loudness === lo || (isNaN(m.loudness) && isNaN(lo)))) stationModel.setProperty(j, "loudness", lo);
+            if (m.name !== s.name) stationModel.setProperty(j, "name", s.name);
+            if (m.city !== s.city) stationModel.setProperty(j, "city", s.city);
+            if (m.website !== (s.website || "")) stationModel.setProperty(j, "website", s.website || "");
+            if (m.donate !== (s.donate || "")) stationModel.setProperty(j, "donate", s.donate || "");
+            if (m.icon !== (s.icon || "")) stationModel.setProperty(j, "icon", s.icon || "");
+        }
     }
 
     // Persist the station list (including learned loudness) back to config.

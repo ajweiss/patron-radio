@@ -19,20 +19,42 @@ PlasmaExtras.Representation {
             anchors.fill: parent
             spacing: Kirigami.Units.smallSpacing
 
-            // Left Side: Information
+            // Donate — a heart styled like the other header controls (positive
+            // colour to read as "support"), leading the header.
+            PlasmaComponents.ToolButton {
+                visible: root.currentStationDonate !== ""
+                icon.name: "help-donate"
+                icon.color: Kirigami.Theme.positiveTextColor
+                activeFocusOnTab: visible
+                hoverEnabled: true
+                Layout.alignment: Qt.AlignVCenter
+                onClicked: {
+                    var url = root.currentStationDonate;
+                    if (url !== "") {
+                        url += url.indexOf("?") > -1 ? "&" : "?";
+                        url += "source=plasma_radio";
+                        root.openExternalUrl(url);
+                    }
+                }
+                PlasmaComponents.ToolTip {
+                    text: "Support " + root.currentStationName
+                    visible: parent.hovered || parent.activeFocus
+                }
+            }
+
+            // Station name + now playing
             ColumnLayout {
                 Layout.fillWidth: true
-                Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
-                Layout.leftMargin: 1
+                Layout.alignment: Qt.AlignVCenter
                 spacing: 0
-                
+
                 PlasmaComponents.Label {
                     text: root.currentStationName
                     textFormat: Text.PlainText
-                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.5
+                    font.pointSize: Kirigami.Theme.defaultFont.pointSize * 1.4
                     font.weight: Font.Bold
                     Layout.fillWidth: true
-                    wrapMode: Text.Wrap
+                    elide: Text.ElideRight
                 }
 
                 PlasmaComponents.Label {
@@ -40,70 +62,55 @@ PlasmaExtras.Representation {
                     textFormat: Text.PlainText
                     opacity: 0.7
                     Layout.fillWidth: true
-                    wrapMode: Text.Wrap
+                    elide: Text.ElideRight
                     font.italic: root.currentTrack !== ""
                 }
             }
             
-            // Right Side: All Actions
+            // Right Side: transport + overflow
             RowLayout {
-                Layout.alignment: Qt.AlignRight | Qt.AlignTop
-                Layout.topMargin: Kirigami.Units.tinySpacing
+                Layout.alignment: Qt.AlignRight | Qt.AlignVCenter
                 spacing: Kirigami.Units.smallSpacing
-                
-                PlasmaComponents.ToolButton {
-                    icon.name: root.isPlaying ? "media-playback-stop" : "media-playback-start"
-                    onClicked: root.togglePlay()
-                    hoverEnabled: true
-                    activeFocusOnTab: true
-                    PlasmaComponents.ToolTip {
-                        text: root.isPlaying ? "Stop Playback" : "Start Playback"
-                        visible: parent.hovered || parent.activeFocus
-                    }
-                }
-                
-                PlasmaComponents.ToolButton {
-                    icon.name: "help-donate"
-                    icon.color: Kirigami.Theme.positiveTextColor
-                    visible: root.currentStationDonate !== ""
-                    activeFocusOnTab: visible
-                    onClicked: {
-                        var url = root.currentStationDonate;
-                        if (url !== "") {
-                            url += url.indexOf("?") > -1 ? "&" : "?";
-                            url += "source=plasma_radio";
-                            root.openExternalUrl(url);
+
+                // Transport — same size as the overflow button (consistent), but
+                // honest about all four states: play / stop / buffering (spinner) /
+                // broken (fix). Fixed-size wrapper so the spinner swap doesn't reflow.
+                Item {
+                    id: transport
+                    Layout.alignment: Qt.AlignVCenter
+                    Layout.preferredWidth: overflowBtn.implicitWidth
+                    Layout.preferredHeight: overflowBtn.implicitHeight
+
+                    PlasmaComponents.ToolButton {
+                        anchors.fill: parent
+                        // Hide the icon while buffering; the spinner takes its place.
+                        icon.name: root.isBuffering ? ""
+                                 : (root.isBroken ? "tools-wizard"
+                                 : (root.isPlaying ? "media-playback-stop" : "media-playback-start"))
+                        activeFocusOnTab: true
+                        hoverEnabled: true
+                        onClicked: { if (root.isBroken) root.fixCurrentStream(); else root.togglePlay(); }
+                        PlasmaComponents.ToolTip {
+                            text: root.isBroken ? "Find a working stream"
+                                : (root.isBuffering ? "Buffering — click to stop"
+                                : (root.isPlaying ? "Stop" : "Play"))
+                            visible: parent.hovered || parent.activeFocus
                         }
                     }
-                    hoverEnabled: true
-                    PlasmaComponents.ToolTip {
-                        text: "Donate to Station"
-                        visible: parent.hovered || parent.activeFocus
-                    }
-                }
-                
-                PlasmaComponents.ToolButton {
-                    icon.name: "view-media-playlist"
-                    visible: root.currentStationWebsite !== ""
-                    activeFocusOnTab: visible
-                    onClicked: {
-                        var url = root.currentStationWebsite;
-                        if (url !== "") {
-                            url += url.indexOf("?") > -1 ? "&" : "?";
-                            url += "source=plasma_radio";
-                            root.openExternalUrl(url);
-                        }
-                    }
-                    hoverEnabled: true
-                    PlasmaComponents.ToolTip {
-                        text: "Station Website / Playlist"
-                        visible: parent.hovered || parent.activeFocus
+                    PlasmaComponents.BusyIndicator {
+                        anchors.centerIn: parent
+                        width: Kirigami.Units.iconSizes.smallMedium
+                        height: Kirigami.Units.iconSizes.smallMedium
+                        visible: root.isBuffering
+                        running: visible
                     }
                 }
 
-                // Overflow menu — same actions as the panel right-click menu, so
+                // Overflow menu — secondary, default size. Same actions as the panel
+                // right-click menu (both built from contextActions.actionList).
                 // it stays in sync (both are built from contextActions.actionList).
                 PlasmaComponents.ToolButton {
+                    id: overflowBtn
                     icon.name: "overflow-menu"
                     activeFocusOnTab: true
                     onClicked: { contextActions.update(); actionsMenu.rebuild(); actionsMenu.popup() }
@@ -190,12 +197,75 @@ PlasmaExtras.Representation {
         }
     }
 
-    // Main Content Area: Scrollable List
-    Item {
+    // Main Content Area: recently-played strip + station list
+    ColumnLayout {
         anchors.fill: parent
+        spacing: 0
+
+        // Recently played — the live "playlist". Shows previous tracks (the
+        // current one is already in the header); collapses when there's no data.
+        ColumnLayout {
+            Layout.fillWidth: true
+            Layout.margins: Kirigami.Units.smallSpacing
+            spacing: Kirigami.Units.smallSpacing / 2
+            visible: trackHistory.count > 1
+
+            RowLayout {
+                Layout.fillWidth: true
+                PlasmaComponents.Label {
+                    text: "Recently played"
+                    font.weight: Font.Bold
+                    font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                    opacity: 0.8
+                    Layout.fillWidth: true
+                }
+                PlasmaComponents.ToolButton {
+                    visible: root.currentStationWebsite !== ""
+                    text: "Playlist"
+                    icon.name: "link"
+                    flat: true
+                    display: AbstractButton.TextBesideIcon
+                    onClicked: {
+                        var url = root.currentStationWebsite;
+                        url += url.indexOf("?") > -1 ? "&" : "?";
+                        url += "source=plasma_radio";
+                        root.openExternalUrl(url);
+                    }
+                    PlasmaComponents.ToolTip { text: "Open the station's playlist page"; visible: parent.hovered }
+                }
+            }
+
+            Repeater {
+                model: trackHistory
+                delegate: RowLayout {
+                    visible: index >= 1 && index <= 3
+                    Layout.fillWidth: true
+                    Layout.leftMargin: Kirigami.Units.smallSpacing
+                    spacing: Kirigami.Units.smallSpacing
+                    PlasmaComponents.Label {
+                        text: root.relTime(model.at)
+                        opacity: 0.5
+                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                        Layout.preferredWidth: Kirigami.Units.gridUnit * 1.6
+                        horizontalAlignment: Text.AlignRight
+                    }
+                    PlasmaComponents.Label {
+                        text: model.title
+                        textFormat: Text.PlainText
+                        opacity: 0.85
+                        elide: Text.ElideRight
+                        Layout.fillWidth: true
+                        font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                    }
+                }
+            }
+
+            Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.smallSpacing / 2 }
+        }
 
         ScrollView {
-            anchors.fill: parent
+            Layout.fillWidth: true
+            Layout.fillHeight: true
             
             ListView {
                 id: stationList
