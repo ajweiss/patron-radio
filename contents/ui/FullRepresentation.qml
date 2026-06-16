@@ -348,6 +348,15 @@ PlasmaExtras.Representation {
                     forceActiveFocus();
                 }
 
+                // Keep the highlight on the playing station as it changes — from
+                // this popup, the panel/desktop counterpart, or MPRIS.
+                Connections {
+                    target: root
+                    function onCurrentStationIndexChanged() {
+                        stationList.currentIndex = root.currentStationIndex + 1;
+                    }
+                }
+
                 function activateCurrent() {
                     if (currentIndex <= 0) root.playClosestStation();
                     else root.playStation(currentIndex - 1);

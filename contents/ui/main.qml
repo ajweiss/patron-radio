@@ -114,6 +114,10 @@ PlasmoidItem {
             var lufs = RadioBackendModule.RadioBackend.measuredLoudness;
             if (isNaN(lufs)) return;
             if (root.currentStationIndex < 0 || root.currentStationIndex >= stationModel.count) return;
+            // Only attribute the measurement if we're actually pointed at the
+            // playing stream — guards a divergent-list window from writing the
+            // loudness onto the wrong station.
+            if (stationModel.get(root.currentStationIndex).url !== RadioBackendModule.RadioBackend.currentUrl) return;
             stationModel.setProperty(root.currentStationIndex, "loudness", lufs);
             root.persistStationsSoon();
         }
