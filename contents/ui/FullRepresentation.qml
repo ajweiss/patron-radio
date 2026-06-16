@@ -260,7 +260,7 @@ PlasmaExtras.Representation {
                 }
             }
 
-            Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.smallSpacing / 2 }
+            Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.largeSpacing }
         }
 
         ScrollView {
