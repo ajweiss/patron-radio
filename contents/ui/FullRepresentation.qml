@@ -1,7 +1,9 @@
 import QtQuick
+import QtQuick.Window
 import QtQuick.Layouts
 import QtQuick.Controls
 import org.kde.plasma.plasmoid
+import org.kde.plasma.core as PlasmaCore
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.kirigami as Kirigami
 import org.kde.plasma.extras as PlasmaExtras
@@ -9,12 +11,66 @@ import org.kde.plasma.extras as PlasmaExtras
 PlasmaExtras.Representation {
     id: fullRoot
 
-    Layout.minimumWidth: Kirigami.Units.gridUnit * 18
-    Layout.minimumHeight: Kirigami.Units.gridUnit * 22
+    Layout.minimumWidth: Kirigami.Units.gridUnit * 12
+    // Collapse to exactly the header so the desktop widget can shrink to just
+    // the "now playing" bar. The container adds its own padding on top of this.
+    Layout.minimumHeight: headerBar.implicitHeight
     Layout.preferredWidth: Kirigami.Units.gridUnit * 20
     Layout.preferredHeight: Kirigami.Units.gridUnit * 26
 
+    // Responsive (desktop): shed the station list, then the recently-played strip,
+    // as the widget shrinks — leaving a compact "now playing" header.
+    readonly property bool showStationList: height >= Kirigami.Units.gridUnit * 13
+    readonly property bool showRecent: height >= Kirigami.Units.gridUnit * 8
+
+    // True for the desktop widget (Planar), false in the panel popup.
+    readonly property bool onDesktop: Plasmoid.formFactor === PlasmaCore.Types.Planar
+
+    // True while the desktop is in Edit Mode (arranging/resizing widgets).
+    readonly property bool inEditMode: Plasmoid.containment
+                                       && Plasmoid.containment.corona
+                                       && Plasmoid.containment.corona.editMode === true
+
+    // Placeholder tracks so the recently-played strip is visible while you resize
+    // the widget in edit mode (real history is usually empty then).
+    ListModel { id: recentPreview }
+    Component.onCompleted: {
+        var now = Date.now();
+        recentPreview.append({ "title": "(now playing)", "at": now });
+        recentPreview.append({ "title": "Khruangbin — María También", "at": now - 2 * 60000 });
+        recentPreview.append({ "title": "Floating Points — Last Bloom", "at": now - 7 * 60000 });
+        recentPreview.append({ "title": "Four Tet — Baby", "at": now - 13 * 60000 });
+    }
+    readonly property var recentModel: (inEditMode && trackHistory.count <= 1) ? recentPreview : trackHistory
+
     header: PlasmaExtras.PlasmoidHeading {
+        id: headerBar
+
+        // Mirror PlasmoidHeading's own popup-aware border logic, but drop the
+        // bottom separator when the widget is collapsed to just the header on
+        // the desktop — otherwise the divider floats as a stray line.
+        enabledBorders: {
+            var b;
+            const w = Window.window;
+            const popup = w as PlasmaCore.PopupPlasmaWindow;
+            if (!popup) {
+                b = Qt.LeftEdge | Qt.TopEdge | Qt.RightEdge | Qt.BottomEdge;
+            } else {
+                const windowBorders = popup.borders;
+                b = Qt.TopEdge | Qt.BottomEdge;
+                if ((windowBorders & Qt.LeftEdge) && Math.floor(background.Kirigami.ScenePosition.x) <= 0) {
+                    b |= Qt.LeftEdge;
+                }
+                if ((windowBorders & Qt.RightEdge) && Math.ceil(background.Kirigami.ScenePosition.x + background.width) >= w.width) {
+                    b |= Qt.RightEdge;
+                }
+            }
+            if (!fullRoot.showRecent && !fullRoot.showStationList) {
+                b &= ~Qt.BottomEdge;
+            }
+            return b;
+        }
+
         RowLayout {
             anchors.fill: parent
             spacing: Kirigami.Units.smallSpacing
@@ -208,7 +264,9 @@ PlasmaExtras.Representation {
             Layout.fillWidth: true
             Layout.margins: Kirigami.Units.smallSpacing
             spacing: Kirigami.Units.smallSpacing / 2
-            visible: trackHistory.count > 1
+            // On the desktop the recents strip is a persistent feature; in the
+            // panel popup it only appears once there's history to show.
+            visible: fullRoot.showRecent && (fullRoot.onDesktop || trackHistory.count > 1)
 
             RowLayout {
                 Layout.fillWidth: true
@@ -236,7 +294,7 @@ PlasmaExtras.Representation {
             }
 
             Repeater {
-                model: trackHistory
+                model: fullRoot.recentModel
                 delegate: RowLayout {
                     visible: index >= 1 && index <= 3
                     Layout.fillWidth: true
@@ -260,13 +318,20 @@ PlasmaExtras.Representation {
                 }
             }
 
-            Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.largeSpacing }
+            // Divider between the recents strip and the station list below it —
+            // only meaningful when the list is actually shown.
+            Kirigami.Separator {
+                Layout.fillWidth: true
+                Layout.topMargin: Kirigami.Units.largeSpacing
+                visible: fullRoot.showStationList
+            }
         }
 
         ScrollView {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            
+            visible: fullRoot.showStationList
+
             ListView {
                 id: stationList
                 model: stationModel.count + 1
@@ -400,6 +465,14 @@ PlasmaExtras.Representation {
                     }
                 }
             }
+        }
+
+        // With the station list hidden, soak up the leftover height so the
+        // recents strip (and its heading) stays pinned to the top.
+        Item {
+            Layout.fillWidth: true
+            Layout.fillHeight: true
+            visible: !fullRoot.showStationList
         }
     }
 }
