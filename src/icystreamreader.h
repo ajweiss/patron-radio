@@ -38,6 +38,9 @@ private Q_SLOTS:
 
 private:
     void processData();
+    // Reject non-http(s) schemes and literal IPs that aren't globally routable
+    // (loopback/private/link-local/etc.) to limit SSRF from untrusted stream URLs.
+    static bool isDisallowedUrl(const QUrl &url);
 
     QNetworkAccessManager m_nam;
     QNetworkReply *m_reply;
@@ -54,8 +57,8 @@ private:
     QWaitCondition m_dataReady;
     bool m_active = false;          // true between start() and stop(); guarded by m_bufferMutex
 
-    int m_metaInt;
-    int m_audioBytesRead;
+    qint64 m_metaInt;        // ICY metadata interval (bytes); -1 = none/invalid. 64-bit: hostile headers
+    qint64 m_audioBytesRead; // running count toward m_metaInt — guard against signed overflow
     int m_metaBytesLeft;
     bool m_readyToPlayEmitted;
     int m_readyThreshold;   // bytes of audio to pre-buffer before play; from icy-br or fallback

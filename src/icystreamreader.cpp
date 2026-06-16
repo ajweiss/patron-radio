@@ -2,6 +2,7 @@
 #include <QNetworkRequest>
 #include <QMutexLocker>
 #include <QThread>
+#include <QHostAddress>
 #include <QDebug>
 
 // Pre-play buffer: aim for a fixed *duration* of audio (so start-up latency
@@ -13,6 +14,7 @@ static constexpr int ASSUMED_KBPS = 128;              // bitrate assumption when
 static constexpr int READY_FLOOR = 16 * 1024;         // never start the demuxer with less than this
 static constexpr int MAX_BUFFER = 10 * 1024 * 1024;   // 10MB cap
 static constexpr unsigned long READ_WAIT_MS = 8000;   // max blocking wait in readData() before yielding
+static constexpr qint64 MAX_METAINT = 1024 * 1024;    // sane upper bound for icy-metaint (real values are a few KB)
 
 IcyStreamReader::IcyStreamReader(QObject *parent)
     : QIODevice(parent), m_reply(nullptr), m_metaInt(0), m_audioBytesRead(0), m_metaBytesLeft(0), m_readyToPlayEmitted(false), m_readyThreshold(0), m_state(StateAudio)
@@ -25,15 +27,49 @@ IcyStreamReader::~IcyStreamReader()
     stop();
 }
 
+bool IcyStreamReader::isDisallowedUrl(const QUrl &url)
+{
+    const QString scheme = url.scheme().toLower();
+    if (scheme != QLatin1String("http") && scheme != QLatin1String("https"))
+        return true; // only fetch over http/https
+
+    // If the host is a literal IP, require it to be globally routable. This blocks
+    // SSRF to loopback/private/link-local/ULA/multicast (e.g. 127.0.0.1,
+    // 169.254.169.254, 192.168.x.x). Hostnames that resolve to such addresses
+    // aren't caught here (that needs DNS resolution); this covers the direct case.
+    const QHostAddress addr(url.host());
+    if (!addr.isNull() && !addr.isGlobal())
+        return true;
+
+    return false;
+}
+
 void IcyStreamReader::start(const QUrl &url)
 {
     stop();
+
+    if (isDisallowedUrl(url)) {
+        qDebug() << "Refusing to open disallowed stream URL:" << url.toString();
+        Q_EMIT errorOccurred(QStringLiteral("Refused an unsupported or non-routable stream URL"));
+        return;
+    }
 
     QNetworkRequest request(url);
     request.setAttribute(QNetworkRequest::RedirectPolicyAttribute, QNetworkRequest::NoLessSafeRedirectPolicy);
     request.setRawHeader("Icy-MetaData", "1");
 
     m_reply = m_nam.get(request);
+
+    // Validate every redirect target too — the scheme/IP check above only covers
+    // the initial URL, and a redirect could point at an internal host.
+    connect(m_reply, &QNetworkReply::redirected, this, [this](const QUrl &target) {
+        if (isDisallowedUrl(target)) {
+            qDebug() << "Blocking redirect to disallowed host:" << target.toString();
+            if (m_reply)
+                m_reply->abort();
+            Q_EMIT errorOccurred(QStringLiteral("Refused a redirect to a non-routable host"));
+        }
+    });
 
     {
         QMutexLocker locker(&m_bufferMutex);
@@ -143,10 +179,14 @@ void IcyStreamReader::onReadyRead()
     if (!m_reply) return;
 
     if (m_metaInt == 0) {
+        m_metaInt = -1; // default: treat as no metadata
         if (m_reply->hasRawHeader("icy-metaint")) {
-            m_metaInt = m_reply->rawHeader("icy-metaint").toInt();
-        } else {
-            m_metaInt = -1;
+            bool ok = false;
+            const qint64 mi = m_reply->rawHeader("icy-metaint").trimmed().toLongLong(&ok);
+            // Reject junk / absurd values from a hostile stream so the audio
+            // counter can't run unbounded (and overflow).
+            if (ok && mi > 0 && mi <= MAX_METAINT)
+                m_metaInt = mi;
         }
     }
 
@@ -192,7 +232,7 @@ void IcyStreamReader::processData()
             }
 
             if (m_state == StateAudio) {
-                qint64 toRead = qMin((qint64)(m_metaInt - m_audioBytesRead), m_reply->bytesAvailable());
+                qint64 toRead = qMin(m_metaInt - m_audioBytesRead, m_reply->bytesAvailable());
                 if (toRead > 0) {
                     QByteArray audioChunk = m_reply->read(toRead);
                     m_audioBuffer.append(audioChunk);

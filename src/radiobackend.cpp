@@ -198,7 +198,10 @@ void RadioBackend::onAudioBuffer(const QAudioBuffer &buffer)
     if (!st)
         return;
 
-    const size_t frames = (size_t)buffer.frameCount();
+    const qsizetype frameCount = buffer.frameCount();
+    if (frameCount <= 0)
+        return; // nothing to measure; also guards the size_t cast below
+    const size_t frames = (size_t)frameCount;
     switch (fmt.sampleFormat()) {
     case QAudioFormat::Int16:
         ebur128_add_frames_short(st, buffer.constData<short>(), frames);
