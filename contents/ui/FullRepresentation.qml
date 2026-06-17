@@ -21,7 +21,7 @@ PlasmaExtras.Representation {
     // Responsive (desktop): shed the station list, then the recently-played strip,
     // as the widget shrinks — leaving a compact "now playing" header.
     readonly property bool showStationList: height >= Kirigami.Units.gridUnit * 13
-    readonly property bool showRecent: height >= Kirigami.Units.gridUnit * 8
+    readonly property bool showRecent: height >= Kirigami.Units.gridUnit * 6
 
     // True for the desktop widget (Planar), false in the panel popup.
     readonly property bool onDesktop: Plasmoid.formFactor === PlasmaCore.Types.Planar
@@ -262,7 +262,11 @@ PlasmaExtras.Representation {
         // current one is already in the header); collapses when there's no data.
         ColumnLayout {
             Layout.fillWidth: true
+            Layout.alignment: Qt.AlignTop
             Layout.margins: Kirigami.Units.smallSpacing
+            // A bit more breathing room above the heading, to separate it from
+            // the now-playing bar (the snug header row no longer provides it).
+            Layout.topMargin: Kirigami.Units.largeSpacing
             spacing: Kirigami.Units.smallSpacing / 2
             // On the desktop the recents strip is a persistent feature; in the
             // panel popup it only appears once there's history to show.
@@ -270,10 +274,6 @@ PlasmaExtras.Representation {
 
             RowLayout {
                 Layout.fillWidth: true
-                // Keep the row at text height so the taller "Playlist" button can't
-                // inflate it — otherwise the heading floats with extra space below
-                // when there are no track rows under it.
-                Layout.preferredHeight: recentsTitle.implicitHeight
                 PlasmaComponents.Label {
                     id: recentsTitle
                     text: "Recently played"
@@ -287,7 +287,9 @@ PlasmaExtras.Representation {
                     text: "Playlist"
                     icon.name: "link"
                     flat: true
-                    Layout.fillHeight: true
+                    // Match the heading height so the taller default button can't
+                    // inflate the row (which left the heading floating when empty).
+                    Layout.preferredHeight: recentsTitle.implicitHeight
                     font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                     display: AbstractButton.TextBesideIcon
                     onClicked: {
