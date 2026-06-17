@@ -100,9 +100,23 @@ PlasmaExtras.Representation {
 
             // Station name + now playing
             ColumnLayout {
+                id: nowPlayingCol
                 Layout.fillWidth: true
                 Layout.alignment: Qt.AlignVCenter
                 spacing: 0
+
+                // Crawl long "now playing" titles instead of eliding them, the
+                // same way the panel marquees its subtitle.
+                readonly property bool shouldMarqueeTrack: trackLabel.contentWidth > (trackContainer.width + 2)
+                function resetTrackMarquee() {
+                    trackMarquee.stop();
+                    trackLabel.x = 0;
+                    if (shouldMarqueeTrack) trackMarquee.restart();
+                }
+                Connections {
+                    target: root
+                    function onCurrentTrackChanged() { nowPlayingCol.resetTrackMarquee(); }
+                }
 
                 PlasmaComponents.Label {
                     text: root.currentStationName
@@ -113,13 +127,44 @@ PlasmaExtras.Representation {
                     elide: Text.ElideRight
                 }
 
-                PlasmaComponents.Label {
-                    text: root.currentTrack !== "" ? root.currentTrack : root.currentStationCity
-                    textFormat: Text.PlainText
-                    opacity: 0.7
+                Item {
+                    id: trackContainer
                     Layout.fillWidth: true
-                    elide: Text.ElideRight
-                    font.italic: root.currentTrack !== ""
+                    Layout.preferredHeight: trackLabel.implicitHeight
+                    clip: true
+                    onWidthChanged: nowPlayingCol.resetTrackMarquee()
+
+                    PlasmaComponents.Label {
+                        id: trackLabel
+                        text: root.currentTrack !== "" ? root.currentTrack : root.currentStationCity
+                        textFormat: Text.PlainText
+                        opacity: 0.7
+                        font.italic: root.currentTrack !== ""
+                        // contentWidth-sized + no elide so the marquee can pan it.
+                        width: contentWidth
+                        elide: Text.ElideNone
+                        wrapMode: Text.NoWrap
+
+                        SequentialAnimation on x {
+                            id: trackMarquee
+                            running: nowPlayingCol.shouldMarqueeTrack
+                            loops: Animation.Infinite
+
+                            PauseAnimation { duration: 2000 }
+                            NumberAnimation {
+                                from: 0
+                                to: -(trackLabel.width - trackContainer.width + 4)
+                                duration: Math.max(1500, (trackLabel.width - trackContainer.width) * 20)
+                                easing.type: Easing.Linear
+                            }
+                            PauseAnimation { duration: 2000 }
+                            NumberAnimation {
+                                to: 0
+                                duration: 600
+                                easing.type: Easing.InOutQuad
+                            }
+                        }
+                    }
                 }
             }
             
