@@ -270,7 +270,12 @@ PlasmaExtras.Representation {
 
             RowLayout {
                 Layout.fillWidth: true
+                // Keep the row at text height so the taller "Playlist" button can't
+                // inflate it — otherwise the heading floats with extra space below
+                // when there are no track rows under it.
+                Layout.preferredHeight: recentsTitle.implicitHeight
                 PlasmaComponents.Label {
+                    id: recentsTitle
                     text: "Recently played"
                     font.weight: Font.Bold
                     font.pixelSize: Kirigami.Theme.smallFont.pixelSize
@@ -282,6 +287,8 @@ PlasmaExtras.Representation {
                     text: "Playlist"
                     icon.name: "link"
                     flat: true
+                    Layout.fillHeight: true
+                    font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                     display: AbstractButton.TextBesideIcon
                     onClicked: {
                         var url = root.currentStationWebsite;
