@@ -29,7 +29,11 @@ Item {
                 spacing: 0
                 
                 PlasmaComponents.Label {
-                    text: root.isLocating ? "Locating Station..." : (root.isFixing ? "Finding new stream..." : (root.isPlaying ? "Playing: " + root.currentStationName : (root.isBroken ? "Stream Offline" : "Plasma Radio")))
+                    text: root.isLocating ? i18n("Locating Station...")
+                        : (root.isFixing ? i18n("Finding new stream...")
+                        : (root.isPlaying ? i18nc("@info:tooltip, %1 is a station name", "Playing: %1", root.currentStationName)
+                        : (root.isBroken ? i18n("Stream Offline")
+                        : i18n("Patron Radio"))))
                     textFormat: Text.PlainText
                     font.weight: Font.Bold
                     Layout.fillWidth: true
@@ -39,20 +43,24 @@ Item {
                     text: {
                         var subText = "";
                         if (root.isLocating) {
-                            subText = "Finding closest local station...";
+                            subText = i18n("Finding closest local station...");
                         } else if (root.isFixing) {
-                            subText = "Searching radio-browser.info for a working stream...";
+                            subText = i18n("Searching radio-browser.info for a working stream...");
                         } else if (root.isBroken) {
-                            subText = root.currentStationName + " stream is currently unavailable.";
-                            if (root.errorMessage) subText += " (" + root.errorMessage + ")";
-                            subText += " Click 'Fix' to search for a new URL.";
+                            subText = root.errorMessage
+                                ? i18nc("@info:tooltip, %1 station name, %2 error detail", "%1 stream is currently unavailable. (%2)", root.currentStationName, root.errorMessage)
+                                : i18nc("@info:tooltip, %1 is a station name", "%1 stream is currently unavailable.", root.currentStationName);
+                            subText += " " + i18nc("@info:tooltip", "Click 'Fix' to search for a new URL.");
                         } else {
-                            var status = root.isPlaying ? "Playing" : (root.isBuffering ? "Buffering" : "Stopped");
-                            var info = root.currentStationName;
-                            if (root.currentStationCity !== "") info += " from " + root.currentStationCity;
-                            subText = status + " " + info;
+                            // %1 carries "<station>" or "<station> from <city>".
+                            var where = root.currentStationCity !== ""
+                                ? i18nc("@info:tooltip, %1 station name, %2 city", "%1 from %2", root.currentStationName, root.currentStationCity)
+                                : root.currentStationName;
+                            subText = root.isPlaying ? i18nc("@info:tooltip, %1 is the station/city phrase", "Playing %1", where)
+                                    : (root.isBuffering ? i18nc("@info:tooltip, %1 is the station/city phrase", "Buffering %1", where)
+                                    : i18nc("@info:tooltip, %1 is the station/city phrase", "Stopped %1", where));
                             if (root.currentTrack !== "") {
-                                subText += "\nNow Playing: " + root.currentTrack;
+                                subText += "\n" + i18nc("@info:tooltip, %1 is the track title", "Now Playing: %1", root.currentTrack);
                             }
                             var techInfo = [];
                             if (root.streamCodec !== "") techInfo.push(root.streamCodec);
@@ -75,7 +83,7 @@ Item {
         }
         
         PlasmaComponents.Label {
-            text: "Click to open menu for station details, website, and donation options."
+            text: i18n("Click to open menu for station details, website, and donation options.")
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             opacity: 0.7
             Layout.fillWidth: true

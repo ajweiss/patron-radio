@@ -180,25 +180,25 @@ Item {
         anchors.rightMargin: Kirigami.Units.gridUnit
         spacing: Kirigami.Units.smallSpacing
 
-        Kirigami.Heading { text: "Behavior Settings"; level: 1; Layout.fillWidth: true; Layout.bottomMargin: Kirigami.Units.largeSpacing }
+        Kirigami.Heading { text: i18n("Behavior Settings"); level: 1; Layout.fillWidth: true; Layout.bottomMargin: Kirigami.Units.largeSpacing }
 
-        Kirigami.Heading { text: "Startup & Playback"; level: 4; Layout.fillWidth: true }
+        Kirigami.Heading { text: i18n("Startup & Playback"); level: 4; Layout.fillWidth: true }
         PlasmaComponents.Label {
-            text: "What Patron Radio does when your session starts and while you listen."
+            text: i18n("What Patron Radio does when your session starts and while you listen.")
             opacity: 0.7; font.pointSize: Kirigami.Theme.smallFont.pointSize; wrapMode: Text.WordWrap; Layout.fillWidth: true
         }
 
-        PlasmaComponents.CheckBox { id: autoplayCheckbox; text: "Start playing automatically on system login"; Layout.leftMargin: Kirigami.Units.largeSpacing }
-        PlasmaComponents.CheckBox { id: autoLocalCheckbox; text: "Select closest local station on startup"; Layout.leftMargin: Kirigami.Units.largeSpacing }
-        PlasmaComponents.CheckBox { id: resumePlaybackCheckbox; text: "Automatically resume playback if active when last closed"; Layout.leftMargin: Kirigami.Units.largeSpacing }
-        PlasmaComponents.CheckBox { id: pauseOnBtDisconnectCheckbox; text: "Pause playback when active audio device disconnects"; Layout.leftMargin: Kirigami.Units.largeSpacing }
-        PlasmaComponents.CheckBox { id: inhibitSleepCheckbox; text: "Prevent system sleep while playing"; Layout.leftMargin: Kirigami.Units.largeSpacing }
+        PlasmaComponents.CheckBox { id: autoplayCheckbox; text: i18n("Start playing automatically on system login"); Layout.leftMargin: Kirigami.Units.largeSpacing }
+        PlasmaComponents.CheckBox { id: autoLocalCheckbox; text: i18n("Select closest local station on startup"); Layout.leftMargin: Kirigami.Units.largeSpacing }
+        PlasmaComponents.CheckBox { id: resumePlaybackCheckbox; text: i18n("Automatically resume playback if active when last closed"); Layout.leftMargin: Kirigami.Units.largeSpacing }
+        PlasmaComponents.CheckBox { id: pauseOnBtDisconnectCheckbox; text: i18n("Pause playback when active audio device disconnects"); Layout.leftMargin: Kirigami.Units.largeSpacing }
+        PlasmaComponents.CheckBox { id: inhibitSleepCheckbox; text: i18n("Prevent system sleep while playing"); Layout.leftMargin: Kirigami.Units.largeSpacing }
 
         Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.largeSpacing; Layout.bottomMargin: Kirigami.Units.largeSpacing }
 
-        Kirigami.Heading { text: "Audio Output Priority"; level: 4; Layout.fillWidth: true }
+        Kirigami.Heading { text: i18n("Audio Output Priority"); level: 4; Layout.fillWidth: true }
         PlasmaComponents.Label {
-            text: "Patron Radio will always use the available device that is highest in this list. Revert to system default by moving everything down."
+            text: i18n("Patron Radio will always use the available device that is highest in this list. Revert to system default by moving everything down.")
             opacity: 0.7; font.pointSize: Kirigami.Theme.smallFont.pointSize; wrapMode: Text.WordWrap; Layout.fillWidth: true
         }
 
@@ -229,9 +229,9 @@ Item {
 
         Kirigami.Separator { Layout.fillWidth: true; Layout.topMargin: Kirigami.Units.largeSpacing; Layout.bottomMargin: Kirigami.Units.largeSpacing }
 
-        Kirigami.Heading { text: "Bluetooth Autoplay Triggers"; level: 4; Layout.fillWidth: true }
+        Kirigami.Heading { text: i18n("Bluetooth Autoplay Triggers"); level: 4; Layout.fillWidth: true }
         PlasmaComponents.Label {
-            text: "Check devices that should automatically trigger the 'Play' command when they connect."
+            text: i18n("Check devices that should automatically trigger the 'Play' command when they connect.")
             opacity: 0.7; font.pointSize: Kirigami.Theme.smallFont.pointSize; wrapMode: Text.WordWrap; Layout.fillWidth: true
         }
 
@@ -240,7 +240,7 @@ Item {
             ListView {
                 id: autoplayView; model: autoplayModel; clip: true; spacing: 2
                 delegate: PlasmaComponents.CheckBox {
-                    text: model.name + " (" + model.address + ")"
+                    text: i18nc("audio device: name (address)", "%1 (%2)", model.name, model.address)
                     checked: model.isChecked
                     onToggled: { autoplayModel.setProperty(index, "isChecked", checked); saveAutoplay() }
                 }

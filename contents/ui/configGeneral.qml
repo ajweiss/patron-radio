@@ -82,7 +82,7 @@ Item {
 
         // --- Page Title ---
         Kirigami.Heading {
-            text: "Radio Stations"
+            text: i18n("Radio Stations")
             level: 1 // Massive page title, matching 'About'
             Layout.fillWidth: true
             Layout.bottomMargin: Kirigami.Units.largeSpacing // Space below main title
@@ -97,12 +97,12 @@ Item {
                 spacing: 0
                 
                 Kirigami.Heading {
-                    text: "Station List"
+                    text: i18n("Station List")
                     level: 4 // Demoted from 3 to 4
                     Layout.fillWidth: true
                 }
                 PlasmaComponents.Label {
-                    text: "Manage the list of stations available in the widget."
+                    text: i18n("Manage the list of stations available in the widget.")
                     opacity: 0.7
                     font.pointSize: Kirigami.Theme.smallFont.pointSize
                     Layout.bottomMargin: Kirigami.Units.smallSpacing
@@ -112,7 +112,7 @@ Item {
             Item { Layout.fillWidth: true } // Flexible spacer
 
             PlasmaComponents.Button {
-                text: "Add New Station"
+                text: i18n("Add New Station")
                 icon.name: "list-add"
                 onClicked: {
                     internalModel.insert(0, {"name": "New Station", "city": "City, ST", "url": "https://...", "website": "", "donate": "", "lat": "", "lon": "", "icon": "audio-x-generic"})
@@ -167,7 +167,7 @@ Item {
                                 PlasmaComponents.Label {
                                     Layout.fillWidth: true
                                     Layout.preferredWidth: 2
-                                    text: model.name || "Unnamed Station"
+                                    text: model.name || i18n("Unnamed Station")
                                     font.weight: Font.Bold
                                     elide: Text.ElideRight
                                 }
@@ -182,7 +182,7 @@ Item {
 
                                 PlasmaComponents.ToolButton {
                                     icon.name: "delete"
-                                    PlasmaComponents.ToolTip { text: "Delete Station" }
+                                    PlasmaComponents.ToolTip { text: i18n("Delete Station") }
                                     onClicked: {
                                         internalModel.remove(index)
                                         saveModel()
@@ -210,10 +210,10 @@ Item {
                                 anchors.margins: Kirigami.Units.largeSpacing
                                 
                                 PlasmaComponents.TextField {
-                                    Kirigami.FormData.label: "Name:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Name:")
                                     Layout.fillWidth: true
                                     text: model.name
-                                    placeholderText: "Station Name"
+                                    placeholderText: i18n("Station Name")
                                     onTextChanged: {
                                         if (model.name !== text) {
                                             internalModel.setProperty(index, "name", text)
@@ -223,10 +223,10 @@ Item {
                                 }
 
                                 PlasmaComponents.TextField {
-                                    Kirigami.FormData.label: "Location:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Location:")
                                     Layout.fillWidth: true
                                     text: model.city
-                                    placeholderText: "City, ST"
+                                    placeholderText: i18n("City, ST")
                                     onTextChanged: {
                                         if (model.city !== text) {
                                             internalModel.setProperty(index, "city", text)
@@ -236,7 +236,7 @@ Item {
                                 }
 
                                 PlasmaComponents.TextField {
-                                    Kirigami.FormData.label: "Stream URL:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Stream URL:")
                                     Layout.fillWidth: true
                                     text: model.url
                                     placeholderText: "https://stream.example.com/live.mp3"
@@ -249,7 +249,7 @@ Item {
                                 }
                                 
                                 PlasmaComponents.TextField {
-                                    Kirigami.FormData.label: "Website URL:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Website URL:")
                                     Layout.fillWidth: true
                                     text: model.website || ""
                                     placeholderText: "https://station.example.com/playlist"
@@ -262,7 +262,7 @@ Item {
                                 }
                                 
                                 PlasmaComponents.TextField {
-                                    Kirigami.FormData.label: "Donate URL:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Donate URL:")
                                     Layout.fillWidth: true
                                     text: model.donate || ""
                                     placeholderText: "https://station.example.com/donate"
@@ -275,14 +275,14 @@ Item {
                                 }
                                 
                                 RowLayout {
-                                    Kirigami.FormData.label: "Coordinates:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Coordinates:")
                                     Layout.fillWidth: true
                                     spacing: Kirigami.Units.smallSpacing
                                     
                                     PlasmaComponents.TextField {
                                         Layout.fillWidth: true
                                         text: model.lat !== undefined ? String(model.lat) : ""
-                                        placeholderText: "Latitude (e.g. 40.71)"
+                                        placeholderText: i18n("Latitude (e.g. 40.71)")
                                         onTextChanged: {
                                             if (String(model.lat) !== text) {
                                                 internalModel.setProperty(index, "lat", text)
@@ -293,7 +293,7 @@ Item {
                                     PlasmaComponents.TextField {
                                         Layout.fillWidth: true
                                         text: model.lon !== undefined ? String(model.lon) : ""
-                                        placeholderText: "Longitude (e.g. -74.00)"
+                                        placeholderText: i18n("Longitude (e.g. -74.00)")
                                         onTextChanged: {
                                             if (String(model.lon) !== text) {
                                                 internalModel.setProperty(index, "lon", text)
@@ -304,13 +304,13 @@ Item {
                                 }
                                 
                                 PlasmaComponents.ComboBox {
-                                    Kirigami.FormData.label: "Station Type:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Station Type:")
                                     Layout.fillWidth: true
                                     
                                     // Manually bind the model's icon property to our combo box index
                                     property var iconMapping: ["emblem-music-symbolic", "mic-on-symbolic", "mixed-composite"]
                                     
-                                    model: ["Music", "Talk / Arts", "Mixed / Variety"]
+                                    model: [i18nc("station type", "Music"), i18nc("station type", "Talk / Arts"), i18nc("station type", "Mixed / Variety")]
                                     
                                     currentIndex: {
                                         var currentIcon = model.icon || "audio-x-generic"
@@ -329,7 +329,7 @@ Item {
 
                                 // Loudness level: measured (automatic) or hand-set (manual).
                                 RowLayout {
-                                    Kirigami.FormData.label: "Level:"
+                                    Kirigami.FormData.label: i18nc("station field label", "Level:")
                                     Layout.fillWidth: true
                                     spacing: Kirigami.Units.smallSpacing
 
@@ -339,15 +339,15 @@ Item {
                                     PlasmaComponents.Label {
                                         visible: configRoot.cfg_loudnessAuto
                                         text: {
-                                            if (isNaN(parent.adj)) return "measuring…"
-                                            var dbStr = parent.adj <= -0.05 ? parent.adj.toFixed(1) + " dB" : "0 dB"
-                                            return dbStr + "   (" + Number(model.loudness).toFixed(1) + " LUFS)"
+                                            if (isNaN(parent.adj)) return i18nc("loudness not yet measured", "measuring…")
+                                            var dbStr = parent.adj <= -0.05 ? i18nc("decibel attenuation value", "%1 dB", parent.adj.toFixed(1)) : i18nc("decibel attenuation value", "%1 dB", "0")
+                                            return i18nc("loudness: <dB>  (<n> LUFS)", "%1   (%2 LUFS)", dbStr, Number(model.loudness).toFixed(1))
                                         }
                                         opacity: 0.7
                                         HoverHandler { id: levelHover }
                                         PlasmaComponents.ToolTip {
                                             visible: levelHover.hovered
-                                            text: "Turn off \"Measure levels automatically\" (Loudness tab) to set this manually."
+                                            text: i18nc("%1 is the name of a settings checkbox", "Turn off \"%1\" (Loudness tab) to set this manually.", i18n("Measure levels automatically"))
                                         }
                                     }
 
@@ -357,7 +357,7 @@ Item {
                                         Layout.preferredWidth: Kirigami.Units.gridUnit * 4
                                         horizontalAlignment: TextInput.AlignRight
                                         text: !isNaN(parent.adj) ? parent.adj.toFixed(1) : ""
-                                        placeholderText: "0"
+                                        placeholderText: i18n("0")
                                         validator: DoubleValidator { bottom: -24.0; top: 0.0; decimals: 1; notation: DoubleValidator.StandardNotation }
                                         onEditingFinished: {
                                             var v = parseFloat(text)
@@ -373,7 +373,7 @@ Item {
                                     }
                                     PlasmaComponents.Label {
                                         visible: !configRoot.cfg_loudnessAuto
-                                        text: "dB attenuation (boost not possible)"
+                                        text: i18n("dB attenuation (boost not possible)")
                                         opacity: 0.5
                                         font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                                     }

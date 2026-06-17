@@ -1,0 +1,603 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the Patron Radio package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: Patron Radio\n"
+"Report-Msgid-Bugs-To: https://github.com/ajweiss/patron-radio/issues\n"
+"POT-Creation-Date: 2026-06-16 20:41-0400\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: rc_metadata.cpp:1
+#, kde-format
+msgctxt "Name"
+msgid "Patron Radio"
+msgstr ""
+
+#: rc_metadata.cpp:2
+#, kde-format
+msgctxt "Comment"
+msgid ""
+"A compact panel widget for streaming a curated set of global independent and "
+"public radio stations."
+msgstr ""
+
+#: contents/config/config.qml:6
+#, kde-format
+msgid "Behavior"
+msgstr ""
+
+#: contents/config/config.qml:11 contents/ui/configLoudness.qml:23
+#, kde-format
+msgid "Loudness"
+msgstr ""
+
+#: contents/config/config.qml:16 contents/ui/configAppearance.qml:29
+#, kde-format
+msgid "Appearance"
+msgstr ""
+
+#: contents/config/config.qml:21
+#, kde-format
+msgid "Stations"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:37
+#, kde-format
+msgid "Taskbar Information"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:43
+#, kde-format
+msgid "Control what details are shown on the panel alongside the station name."
+msgstr ""
+
+#: contents/ui/configAppearance.qml:56
+#, kde-format
+msgid "Subtitle Display:"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:61
+#, kde-format
+msgid "Show Station City"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:61
+#, kde-format
+msgid "Show Stream Title"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:61
+#, kde-format
+msgid "Alternate City and Title"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:70
+#, kde-format
+msgid "Taskbar Sizing"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:76
+#, kde-format
+msgid "Adjust how much horizontal space the widget occupies on your panel."
+msgstr ""
+
+#: contents/ui/configAppearance.qml:89
+#, kde-format
+msgid "Sizing Mode:"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:94
+#, kde-format
+msgid "Fixed Width"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:94
+#, kde-format
+msgid "Auto-fit Station & City"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:94
+#, kde-format
+msgid "Auto-fit Everything"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:106
+#, kde-format
+msgid "Fixed Width:"
+msgstr ""
+
+#: contents/ui/configAppearance.qml:118
+#, kde-format
+msgid "%1 unit"
+msgid_plural "%1 units"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/configBehavior.qml:183
+#, kde-format
+msgid "Behavior Settings"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:185
+#, kde-format
+msgid "Startup & Playback"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:187
+#, kde-format
+msgid "What Patron Radio does when your session starts and while you listen."
+msgstr ""
+
+#: contents/ui/configBehavior.qml:191
+#, kde-format
+msgid "Start playing automatically on system login"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:192
+#, kde-format
+msgid "Select closest local station on startup"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:193
+#, kde-format
+msgid "Automatically resume playback if active when last closed"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:194
+#, kde-format
+msgid "Pause playback when active audio device disconnects"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:195
+#, kde-format
+msgid "Prevent system sleep while playing"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:199
+#, kde-format
+msgid "Audio Output Priority"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:201
+#, kde-format
+msgid ""
+"Patron Radio will always use the available device that is highest in this "
+"list. Revert to system default by moving everything down."
+msgstr ""
+
+#: contents/ui/configBehavior.qml:232
+#, kde-format
+msgid "Bluetooth Autoplay Triggers"
+msgstr ""
+
+#: contents/ui/configBehavior.qml:234
+#, kde-format
+msgid ""
+"Check devices that should automatically trigger the 'Play' command when they "
+"connect."
+msgstr ""
+
+#: contents/ui/configBehavior.qml:243
+#, kde-format
+msgctxt "audio device: name (address)"
+msgid "%1 (%2)"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:85
+#, kde-format
+msgid "Radio Stations"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:100
+#, kde-format
+msgid "Station List"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:105
+#, kde-format
+msgid "Manage the list of stations available in the widget."
+msgstr ""
+
+#: contents/ui/configGeneral.qml:115
+#, kde-format
+msgid "Add New Station"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:170
+#, kde-format
+msgid "Unnamed Station"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:185
+#, kde-format
+msgid "Delete Station"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:213
+#, kde-format
+msgctxt "station field label"
+msgid "Name:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:216
+#, kde-format
+msgid "Station Name"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:226
+#, kde-format
+msgctxt "station field label"
+msgid "Location:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:229
+#, kde-format
+msgid "City, ST"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:239
+#, kde-format
+msgctxt "station field label"
+msgid "Stream URL:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:252
+#, kde-format
+msgctxt "station field label"
+msgid "Website URL:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:265
+#, kde-format
+msgctxt "station field label"
+msgid "Donate URL:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:278
+#, kde-format
+msgctxt "station field label"
+msgid "Coordinates:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:285
+#, kde-format
+msgid "Latitude (e.g. 40.71)"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:296
+#, kde-format
+msgid "Longitude (e.g. -74.00)"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:307
+#, kde-format
+msgctxt "station field label"
+msgid "Station Type:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:313
+#, kde-format
+msgctxt "station type"
+msgid "Music"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:313
+#, kde-format
+msgctxt "station type"
+msgid "Talk / Arts"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:313
+#, kde-format
+msgctxt "station type"
+msgid "Mixed / Variety"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:332
+#, kde-format
+msgctxt "station field label"
+msgid "Level:"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:342
+#, kde-format
+msgctxt "loudness not yet measured"
+msgid "measuring…"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:343
+#, kde-format
+msgctxt "decibel attenuation value"
+msgid "%1 dB"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:344
+#, kde-format
+msgctxt "loudness: <dB>  (<n> LUFS)"
+msgid "%1   (%2 LUFS)"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:350 contents/ui/configLoudness.qml:38
+#, kde-format
+msgid "Measure levels automatically"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:350
+#, kde-format
+msgctxt "%1 is the name of a settings checkbox"
+msgid "Turn off \"%1\" (Loudness tab) to set this manually."
+msgstr ""
+
+#: contents/ui/configGeneral.qml:360
+#, kde-format
+msgid "0"
+msgstr ""
+
+#: contents/ui/configGeneral.qml:376
+#, kde-format
+msgid "dB attenuation (boost not possible)"
+msgstr ""
+
+#: contents/ui/configLoudness.qml:26
+#, kde-format
+msgid ""
+"Even out volume differences between stations (EBU R128), so switching isn't "
+"jarring."
+msgstr ""
+
+#: contents/ui/configLoudness.qml:32
+#, kde-format
+msgid "Normalize loudness across stations"
+msgstr ""
+
+#: contents/ui/configLoudness.qml:43
+#, kde-format
+msgid "When off, per-station levels are editable in the Stations tab."
+msgstr ""
+
+#: contents/ui/ContextActions.qml:40
+#, kde-format
+msgid "Fix Broken Stream"
+msgstr ""
+
+#: contents/ui/ContextActions.qml:40
+#, kde-format
+msgid "Stop Playback"
+msgstr ""
+
+#: contents/ui/ContextActions.qml:40
+#, kde-format
+msgid "Start Playback"
+msgstr ""
+
+#: contents/ui/ContextActions.qml:53
+#, kde-format
+msgid "Support this Station (Donate)"
+msgstr ""
+
+#: contents/ui/ContextActions.qml:61
+#, kde-format
+msgid "Station Website / Playlist"
+msgstr ""
+
+#: contents/ui/ContextActions.qml:71
+#, kde-format
+msgid "Automatic Routing (Priority List)"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:96
+#, kde-format
+msgctxt "@info:tooltip, %1 is a station name"
+msgid "Support %1"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:220
+#, kde-format
+msgctxt "@info:tooltip overflow menu button"
+msgid "More actions"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:248
+#, kde-format
+msgctxt "@action:inmenu"
+msgid "Configure Patron Radio…"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:324
+#, kde-format
+msgctxt "@title:group header for the track history list"
+msgid "Recently played"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:332
+#, kde-format
+msgctxt "@action:button opens the station's playlist webpage"
+msgid "Playlist"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:346
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Open the station's playlist page"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:484
+#, kde-format
+msgctxt "@item:inlistbox locating the nearest station"
+msgid "Locating..."
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:484
+#, kde-format
+msgctxt "@item:inlistbox plays the geographically nearest station"
+msgid "Play Nearest Station"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:527
+#, kde-format
+msgctxt "@info:tooltip"
+msgid ""
+"Uses your IP address to find and play the closest configured radio station."
+msgstr ""
+
+#: contents/ui/main.qml:53 contents/ui/RadioToolTip.qml:32
+#, kde-format
+msgid "Locating Station..."
+msgstr ""
+
+#: contents/ui/main.qml:54 contents/ui/RadioToolTip.qml:33
+#, kde-format
+msgid "Finding new stream..."
+msgstr ""
+
+#: contents/ui/main.qml:55 contents/ui/RadioToolTip.qml:34
+#, kde-format
+msgctxt "@info:tooltip, %1 is a station name"
+msgid "Playing: %1"
+msgstr ""
+
+#: contents/ui/main.qml:56 contents/ui/RadioToolTip.qml:35
+#, kde-format
+msgid "Stream Offline"
+msgstr ""
+
+#: contents/ui/main.qml:57 contents/ui/RadioToolTip.qml:36
+#, kde-format
+msgid "Patron Radio"
+msgstr ""
+
+#: contents/ui/main.qml:59 contents/ui/RadioToolTip.qml:46
+#, kde-format
+msgid "Finding closest local station..."
+msgstr ""
+
+#: contents/ui/main.qml:60 contents/ui/RadioToolTip.qml:48
+#, kde-format
+msgid "Searching radio-browser.info for a working stream..."
+msgstr ""
+
+#: contents/ui/main.qml:63 contents/ui/RadioToolTip.qml:51
+#, kde-format
+msgctxt "@info:tooltip, %1 station name, %2 error detail"
+msgid "%1 stream is currently unavailable. (%2)"
+msgstr ""
+
+#: contents/ui/main.qml:64 contents/ui/RadioToolTip.qml:52
+#, kde-format
+msgctxt "@info:tooltip, %1 is a station name"
+msgid "%1 stream is currently unavailable."
+msgstr ""
+
+#: contents/ui/main.qml:65 contents/ui/RadioToolTip.qml:53
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Click 'Fix' to search for a new URL."
+msgstr ""
+
+#: contents/ui/main.qml:70 contents/ui/RadioToolTip.qml:57
+#, kde-format
+msgctxt "@info:tooltip, %1 station name, %2 city"
+msgid "%1 from %2"
+msgstr ""
+
+#: contents/ui/main.qml:72 contents/ui/RadioToolTip.qml:59
+#, kde-format
+msgctxt "@info:tooltip, %1 is the station/city phrase"
+msgid "Playing %1"
+msgstr ""
+
+#: contents/ui/main.qml:73 contents/ui/RadioToolTip.qml:60
+#, kde-format
+msgctxt "@info:tooltip, %1 is the station/city phrase"
+msgid "Buffering %1"
+msgstr ""
+
+#: contents/ui/main.qml:74 contents/ui/RadioToolTip.qml:61
+#, kde-format
+msgctxt "@info:tooltip, %1 is the station/city phrase"
+msgid "Stopped %1"
+msgstr ""
+
+#: contents/ui/main.qml:75 contents/ui/RadioToolTip.qml:63
+#, kde-format
+msgctxt "@info:tooltip, %1 is the track title"
+msgid "Now Playing: %1"
+msgstr ""
+
+#: contents/ui/main.qml:265
+#, kde-format
+msgctxt "@info relative time, under a minute ago"
+msgid "now"
+msgstr ""
+
+#: contents/ui/main.qml:267
+#, kde-format
+msgctxt "@info abbreviated minutes ago, %1 is a number"
+msgid "%1m"
+msgid_plural "%1m"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/main.qml:268
+#, kde-format
+msgctxt "@info abbreviated hours ago, %1 is a number"
+msgid "%1h"
+msgid_plural "%1h"
+msgstr[0] ""
+msgstr[1] ""
+
+#: contents/ui/RadioToolTip.qml:86
+#, kde-format
+msgid "Click to open menu for station details, website, and donation options."
+msgstr ""
+
+#: contents/ui/StationApi.qml:14
+#, kde-format
+msgid "Searching for new stream..."
+msgstr ""
+
+#: contents/ui/StationApi.qml:43
+#, kde-format
+msgid "Could not find a working replacement stream."
+msgstr ""
+
+#: contents/ui/StationApi.qml:44
+#, kde-format
+msgid "Error parsing search results."
+msgstr ""
+
+#: contents/ui/StationApi.qml:45
+#, kde-format
+msgid "Search directory is currently offline."
+msgstr ""
+
+#: contents/ui/StationApi.qml:89
+#, kde-format
+msgid "Geolocation response could not be parsed."
+msgstr ""
+
+#: contents/ui/StationApi.qml:92
+#, kde-format
+msgid "Geolocation service unavailable."
+msgstr ""
+
+#: src/radiobackend.cpp:403
+#, kde-format
+msgid "Refused unsupported stream URL"
+msgstr ""
+
+#: src/radiobackend.cpp:592
+#, kde-format
+msgid "Playing audio"
+msgstr ""

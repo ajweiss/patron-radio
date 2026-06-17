@@ -11,7 +11,7 @@ Item {
         var stationName = root.currentStationName;
         var searchName = stationName.replace(" 90.3FM", "").replace(" 106.7FM", "").replace(" (RNE)", "").trim();
         root.playbackState = root.stateFixing;
-        root.currentTrack = "Searching for new stream...";
+        root.currentTrack = i18n("Searching for new stream...");
         var apiUrl = "https://de1.api.radio-browser.info/json/stations/search?name=" + encodeURIComponent(searchName) + "&hidebroken=true&order=clickcount&reverse=true&limit=3";
         var xhr = new XMLHttpRequest();
         xhr.open("GET", apiUrl, true);
@@ -40,9 +40,9 @@ Item {
                             RadioBackendModule.RadioBackend.knownLoudness = NaN;
                             RadioBackendModule.RadioBackend.currentUrl = foundUrl;
                             RadioBackendModule.RadioBackend.play();
-                        } else { root.playbackState = root.stateBroken; root.currentTrack = "Could not find a working replacement stream."; }
-                    } catch(e) { root.playbackState = root.stateBroken; root.currentTrack = "Error parsing search results."; }
-                } else { root.playbackState = root.stateBroken; root.currentTrack = "Search directory is currently offline."; }
+                        } else { root.playbackState = root.stateBroken; root.currentTrack = i18n("Could not find a working replacement stream."); }
+                    } catch(e) { root.playbackState = root.stateBroken; root.currentTrack = i18n("Error parsing search results."); }
+                } else { root.playbackState = root.stateBroken; root.currentTrack = i18n("Search directory is currently offline."); }
             }
         }
         xhr.send();
@@ -86,10 +86,10 @@ Item {
                             else if (closestIndex !== root.currentStationIndex) { if (!root.isPlaying) { root.currentStationIndex = closestIndex; } }
                         }
                     } catch(e) {
-                        root.errorMessage = "Geolocation response could not be parsed.";
+                        root.errorMessage = i18n("Geolocation response could not be parsed.");
                     }
                 } else {
-                    root.errorMessage = "Geolocation service unavailable.";
+                    root.errorMessage = i18n("Geolocation service unavailable.");
                 }
             }
         }

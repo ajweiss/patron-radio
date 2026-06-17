@@ -25,6 +25,10 @@ add_subdirectory(src)
 install(DIRECTORY contents DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/com.signal11.patronradio)
 install(FILES metadata.json DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/com.signal11.patronradio)
 
+# Translations: compile and install any po/<lang>/<domain>.po catalogs.
+# Harmless until translations exist; the .pot template lives in po/.
+ki18n_install(po)
+
 # Testing
 if(BUILD_TESTING)
     enable_testing()

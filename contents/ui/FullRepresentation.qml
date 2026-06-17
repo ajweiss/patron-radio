@@ -93,7 +93,7 @@ PlasmaExtras.Representation {
                     }
                 }
                 PlasmaComponents.ToolTip {
-                    text: "Support " + root.currentStationName
+                    text: i18nc("@info:tooltip, %1 is a station name", "Support %1", root.currentStationName)
                     visible: parent.hovered || parent.activeFocus
                 }
             }
@@ -217,7 +217,7 @@ PlasmaExtras.Representation {
                     onClicked: { contextActions.update(); actionsMenu.rebuild(); actionsMenu.popup() }
                     hoverEnabled: true
                     PlasmaComponents.ToolTip {
-                        text: "More actions"
+                        text: i18nc("@info:tooltip overflow menu button", "More actions")
                         visible: parent.hovered || parent.activeFocus
                     }
 
@@ -245,7 +245,7 @@ PlasmaExtras.Representation {
                         Component {
                             id: configItemComp
                             MenuItem {
-                                text: "Configure Patron Radio…"
+                                text: i18nc("@action:inmenu", "Configure Patron Radio…")
                                 icon.name: "configure"
                                 onTriggered: {
                                     var a = (typeof Plasmoid.internalAction === "function") ? Plasmoid.internalAction("configure") : null;
@@ -321,7 +321,7 @@ PlasmaExtras.Representation {
                 Layout.fillWidth: true
                 PlasmaComponents.Label {
                     id: recentsTitle
-                    text: "Recently played"
+                    text: i18nc("@title:group header for the track history list", "Recently played")
                     font.weight: Font.Bold
                     font.pixelSize: Kirigami.Theme.smallFont.pixelSize
                     opacity: 0.8
@@ -329,7 +329,7 @@ PlasmaExtras.Representation {
                 }
                 PlasmaComponents.ToolButton {
                     visible: root.currentStationWebsite !== ""
-                    text: "Playlist"
+                    text: i18nc("@action:button opens the station's playlist webpage", "Playlist")
                     icon.name: "link"
                     flat: true
                     // Match the heading height so the taller default button can't
@@ -343,7 +343,7 @@ PlasmaExtras.Representation {
                         url += "source=plasma_radio";
                         root.openExternalUrl(url);
                     }
-                    PlasmaComponents.ToolTip { text: "Open the station's playlist page"; visible: parent.hovered }
+                    PlasmaComponents.ToolTip { text: i18nc("@info:tooltip", "Open the station's playlist page"); visible: parent.hovered }
                 }
             }
 
@@ -481,7 +481,7 @@ PlasmaExtras.Representation {
                             spacing: 0
 
                             PlasmaComponents.Label {
-                                text: isAutoLocalItem ? (root.isLocating ? "Locating..." : "Play Nearest Station") : stationModel.get(actualStationIndex).name
+                                text: isAutoLocalItem ? (root.isLocating ? i18nc("@item:inlistbox locating the nearest station", "Locating...") : i18nc("@item:inlistbox plays the geographically nearest station", "Play Nearest Station")) : stationModel.get(actualStationIndex).name
                                 textFormat: Text.PlainText
                                 font.weight: isCurrentStation ? Font.Bold : Font.Normal
                                 Layout.fillWidth: true
@@ -524,7 +524,7 @@ PlasmaExtras.Representation {
 
                     PlasmaComponents.ToolTip {
                         visible: isAutoLocalItem && parent.hovered
-                        text: "Uses your IP address to find and play the closest configured radio station."
+                        text: i18nc("@info:tooltip", "Uses your IP address to find and play the closest configured radio station.")
                     }
                 }
             }

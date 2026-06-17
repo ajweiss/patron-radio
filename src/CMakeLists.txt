@@ -18,6 +18,7 @@ target_link_libraries(patronradiocore PUBLIC
     Qt::Multimedia
     Qt::Network
     Qt::DBus
+    KF6::I18n
     ${EBUR128_LIBRARY}
 )
 

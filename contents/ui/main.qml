@@ -50,21 +50,29 @@ PlasmoidItem {
     // Expose stationModel so child components can access it
     property alias stationModel: stationModel
 
-    toolTipMainText: isLocating ? "Locating Station..." : (isFixing ? "Finding new stream..." : (isPlaying ? "Playing: " + currentStationName : (isBroken ? "Stream Offline" : "Patron Radio")))
+    toolTipMainText: isLocating ? i18n("Locating Station...")
+                   : (isFixing ? i18n("Finding new stream...")
+                   : (isPlaying ? i18nc("@info:tooltip, %1 is a station name", "Playing: %1", currentStationName)
+                   : (isBroken ? i18n("Stream Offline")
+                   : i18n("Patron Radio"))))
     toolTipSubText: {
-        if (isLocating) return "Finding closest local station...";
-        if (isFixing) return "Searching radio-browser.info for a working stream...";
+        if (isLocating) return i18n("Finding closest local station...");
+        if (isFixing) return i18n("Searching radio-browser.info for a working stream...");
         if (isBroken) {
-            var msg = currentStationName + " stream is currently unavailable.";
-            if (errorMessage) msg += " (" + errorMessage + ")";
-            msg += " Click 'Fix' to search for a new URL.";
-            return msg;
+            var msg = errorMessage
+                ? i18nc("@info:tooltip, %1 station name, %2 error detail", "%1 stream is currently unavailable. (%2)", currentStationName, errorMessage)
+                : i18nc("@info:tooltip, %1 is a station name", "%1 stream is currently unavailable.", currentStationName);
+            return msg + " " + i18nc("@info:tooltip", "Click 'Fix' to search for a new URL.");
         }
-        var status = isPlaying ? "Playing" : (isBuffering ? "Buffering" : "Stopped");
-        var info = currentStationName;
-        if (currentStationCity !== "") info += " from " + currentStationCity;
-        var sub = status + " " + info;
-        if (currentTrack !== "") sub += "\nNow Playing: " + currentTrack;
+        // %1 carries "<station>" or "<station> from <city>" so translators can
+        // reorder the whole phrase around the status verb.
+        var where = currentStationCity !== ""
+            ? i18nc("@info:tooltip, %1 station name, %2 city", "%1 from %2", currentStationName, currentStationCity)
+            : currentStationName;
+        var sub = isPlaying ? i18nc("@info:tooltip, %1 is the station/city phrase", "Playing %1", where)
+                : (isBuffering ? i18nc("@info:tooltip, %1 is the station/city phrase", "Buffering %1", where)
+                : i18nc("@info:tooltip, %1 is the station/city phrase", "Stopped %1", where));
+        if (currentTrack !== "") sub += "\n" + i18nc("@info:tooltip, %1 is the track title", "Now Playing: %1", currentTrack);
         var techInfo = [];
         if (streamCodec !== "") techInfo.push(streamCodec);
         if (streamBitrate !== "") techInfo.push(streamBitrate);
@@ -254,10 +262,10 @@ PlasmoidItem {
     Timer { interval: 30000; repeat: true; running: root.expanded; onTriggered: root.histNow = Date.now() }
     function relTime(at) {
         var s = Math.max(0, Math.floor((root.histNow - at) / 1000));
-        if (s < 60) return "now";
+        if (s < 60) return i18nc("@info relative time, under a minute ago", "now");
         var m = Math.floor(s / 60);
-        if (m < 60) return m + "m";
-        return Math.floor(m / 60) + "h";
+        if (m < 60) return i18ncp("@info abbreviated minutes ago, %1 is a number", "%1m", "%1m", m);
+        return i18ncp("@info abbreviated hours ago, %1 is a number", "%1h", "%1h", Math.floor(m / 60));
     }
 
     // Per-station loudness (LUFS) for normalization. NaN means "not measured yet".

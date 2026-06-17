@@ -26,7 +26,7 @@ Item {
 
         // --- Page Title ---
         Kirigami.Heading {
-            text: "Appearance"
+            text: i18n("Appearance")
             level: 1 // Massive page title, matching 'About'
             Layout.fillWidth: true
             Layout.bottomMargin: Kirigami.Units.largeSpacing // Standard space below main title
@@ -34,13 +34,13 @@ Item {
 
         // --- Taskbar Information Section ---
         Kirigami.Heading {
-            text: "Taskbar Information"
+            text: i18n("Taskbar Information")
             level: 4
             Layout.fillWidth: true
         }
         
         PlasmaComponents.Label {
-            text: "Control what details are shown on the panel alongside the station name."
+            text: i18n("Control what details are shown on the panel alongside the station name.")
             opacity: 0.7
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             wrapMode: Text.WordWrap
@@ -53,12 +53,12 @@ Item {
             spacing: Kirigami.Units.largeSpacing
 
             PlasmaComponents.Label {
-                text: "Subtitle Display:"
+                text: i18n("Subtitle Display:")
             }
 
             PlasmaComponents.ComboBox {
                 id: subtitleModeCombo
-                model: ["Show Station City", "Show Stream Title", "Alternate City and Title"]
+                model: [i18n("Show Station City"), i18n("Show Stream Title"), i18n("Alternate City and Title")]
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 12
             }
         }
@@ -67,13 +67,13 @@ Item {
 
         // --- Taskbar Sizing Section ---
         Kirigami.Heading {
-            text: "Taskbar Sizing"
+            text: i18n("Taskbar Sizing")
             level: 4
             Layout.fillWidth: true
         }
         
         PlasmaComponents.Label {
-            text: "Adjust how much horizontal space the widget occupies on your panel."
+            text: i18n("Adjust how much horizontal space the widget occupies on your panel.")
             opacity: 0.7
             font.pointSize: Kirigami.Theme.smallFont.pointSize
             wrapMode: Text.WordWrap
@@ -86,12 +86,12 @@ Item {
             spacing: Kirigami.Units.largeSpacing
 
             PlasmaComponents.Label {
-                text: "Sizing Mode:"
+                text: i18n("Sizing Mode:")
             }
 
             PlasmaComponents.ComboBox {
                 id: widthModeCombo
-                model: ["Fixed Width", "Auto-fit Station & City", "Auto-fit Everything"]
+                model: [i18n("Fixed Width"), i18n("Auto-fit Station & City"), i18n("Auto-fit Everything")]
                 Layout.preferredWidth: Kirigami.Units.gridUnit * 12
             }
         }
@@ -103,7 +103,7 @@ Item {
             visible: widthModeCombo.currentIndex === 0
             
             PlasmaComponents.Label {
-                text: "Fixed Width:"
+                text: i18n("Fixed Width:")
             }
 
             PlasmaComponents.Slider {
@@ -115,7 +115,7 @@ Item {
             }
             
             PlasmaComponents.Label {
-                text: widthSlider.value + " units"
+                text: i18np("%1 unit", "%1 units", widthSlider.value)
             }
         }
         

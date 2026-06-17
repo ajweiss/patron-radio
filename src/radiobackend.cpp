@@ -10,6 +10,12 @@
 #include <QAudioBuffer>
 #include <cmath>
 #include <ebur128.h>
+#include <KLocalizedString>
+
+// Explicit catalog for the few user-facing strings the backend surfaces.
+// A plugin must not claim the process-wide application domain (plasmashell
+// owns it), so translate against our own domain by name.
+static const char *const PR_DOMAIN = "plasma_applet_com.signal11.patronradio";
 
 #include "mprisrootadaptor.h"
 #include "mprisplayeradaptor.h"
@@ -394,7 +400,7 @@ void RadioBackend::setCurrentUrl(const QString &url)
         const QString scheme = parsed.scheme().toLower();
         if (!parsed.isValid() || (scheme != QLatin1String("http") && scheme != QLatin1String("https"))) {
             qDebug() << "Refusing non-HTTP(S) stream URL:" << url;
-            m_lastError = QStringLiteral("Refused unsupported stream URL");
+            m_lastError = i18nd(PR_DOMAIN, "Refused unsupported stream URL");
             Q_EMIT lastErrorChanged();
             return;
         }
@@ -582,8 +588,8 @@ void RadioBackend::takeSleepInhibitLock()
         QStringLiteral("Inhibit"));
 
     msg << QStringLiteral("sleep")              // what
-        << QStringLiteral("Patron Radio")       // who
-        << QStringLiteral("Playing audio")      // why
+        << QStringLiteral("Patron Radio")       // who (app identity, not translated)
+        << i18nd(PR_DOMAIN, "Playing audio")    // why (shown in sleep-inhibitor UIs)
         << QStringLiteral("block");             // mode
 
     QDBusReply<QDBusUnixFileDescriptor> reply = QDBusConnection::systemBus().call(msg);

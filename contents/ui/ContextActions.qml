@@ -37,7 +37,7 @@ Item {
 
         // 1. Playback / Fix Actions
         var playbackAction = actionFactory.createAction();
-        playbackAction.text = root.isBroken ? "Fix Broken Stream" : (root.isPlaying ? "Stop Playback" : "Start Playback");
+        playbackAction.text = root.isBroken ? i18n("Fix Broken Stream") : (root.isPlaying ? i18n("Stop Playback") : i18n("Start Playback"));
         playbackAction.icon.name = root.isBroken ? "tools-wizard" : (root.isPlaying ? "media-playback-stop" : "media-playback-start");
         playbackAction.triggered.connect(function() {
             if (root.isBroken) root.fixCurrentStream();
@@ -50,7 +50,7 @@ Item {
         // 2. Station Links
         if (root.currentStationDonate !== "") {
             var donateAction = actionFactory.createAction();
-            donateAction.text = "Support this Station (Donate)";
+            donateAction.text = i18n("Support this Station (Donate)");
             donateAction.icon.name = "help-donate";
             donateAction.triggered.connect(function() { root.openExternalUrl(root.currentStationDonate); });
             actions.push(donateAction);
@@ -58,7 +58,7 @@ Item {
 
         if (root.currentStationWebsite !== "") {
             var webAction = actionFactory.createAction();
-            webAction.text = "Station Website / Playlist";
+            webAction.text = i18n("Station Website / Playlist");
             webAction.icon.name = "view-media-playlist";
             webAction.triggered.connect(function() { root.openExternalUrl(root.currentStationWebsite); });
             actions.push(webAction);
@@ -68,7 +68,7 @@ Item {
         actions.push(actionFactory.createSeparator());
 
         var autoRouteAction = actionFactory.createAction();
-        autoRouteAction.text = "Automatic Routing (Priority List)";
+        autoRouteAction.text = i18n("Automatic Routing (Priority List)");
         autoRouteAction.icon.name = "audio-backend-pulse";
         autoRouteAction.checkable = true;
         autoRouteAction.checked = !audioRouter.manualOverrideActive;
