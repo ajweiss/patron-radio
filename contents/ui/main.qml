@@ -256,10 +256,21 @@ PlasmoidItem {
     }
     function commitTrack(title) {
         if (!title || title === _lastHistTrack) return;
-        if (title === root.currentStationName) return; // station name as title, not a song
+        if (isStationBanner(title)) return; // station ID/banner, not a song
         _lastHistTrack = title;
         trackHistory.insert(0, { "title": title, "at": _pendingTrackAt }); // when the song started, not commit time
         while (trackHistory.count > 12) trackHistory.remove(trackHistory.count - 1);
+    }
+    // Heuristic: a StreamTitle that's really a station ID/banner rather than a
+    // song — the station name, exactly or as a leading portion ("New Sounds"
+    // from "New Sounds (WNYC)", which arrives as "New Sounds-"), with no track.
+    function isStationBanner(title) {
+        function norm(s) { return (s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim(); }
+        var t = norm(title);
+        if (t === "") return true;
+        var st = norm(currentStationName);
+        if (st === "") return false;
+        return t === st || st.indexOf(t + " ") === 0; // exact, or whole-word prefix of the station name
     }
     function clearTrackHistory() {
         trackHistory.clear();
@@ -268,9 +279,12 @@ PlasmoidItem {
         histCommitTimer.stop();
     }
 
-    // Drives relative timestamps ("2m") in the popup; only ticks while it's open.
+    // Drives relative timestamps ("2m") in the recents. Tick unconditionally —
+    // gating on `expanded` left histNow frozen in whichever surface wasn't
+    // "expanded" (panel popup vs. inline desktop widget), so its entries all
+    // read as "now". A 30s timer is negligible.
     property double histNow: Date.now()
-    Timer { interval: 30000; repeat: true; running: root.expanded; onTriggered: root.histNow = Date.now() }
+    Timer { interval: 30000; repeat: true; running: true; triggeredOnStart: true; onTriggered: root.histNow = Date.now() }
     function relTime(at) {
         var s = Math.max(0, Math.floor((root.histNow - at) / 1000));
         if (s < 60) return i18nc("@info relative time, under a minute ago", "now");
