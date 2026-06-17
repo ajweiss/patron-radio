@@ -219,6 +219,7 @@ PlasmoidItem {
     ListModel { id: trackHistory }
     property string _lastHistTrack: ""
     property string _pendingTrack: ""
+    property double _pendingTrackAt: 0   // when the pending title first appeared (song start)
 
     // Defer committing a title to the history until it has been the current track
     // for a while. Real songs persist for minutes; transient between-song station
@@ -229,14 +230,16 @@ PlasmoidItem {
         onTriggered: root.commitTrack(root._pendingTrack)
     }
     function queueTrack(title) {
-        _pendingTrack = title;
+        // Stamp the start time on first sighting so the debounce delay doesn't
+        // skew it; keep the original time if the same title keeps re-firing.
+        if (title !== _pendingTrack) { _pendingTrack = title; _pendingTrackAt = Date.now(); }
         if (title) histCommitTimer.restart(); else histCommitTimer.stop();
     }
     function commitTrack(title) {
         if (!title || title === _lastHistTrack) return;
         if (title === root.currentStationName) return; // station name as title, not a song
         _lastHistTrack = title;
-        trackHistory.insert(0, { "title": title, "at": Date.now() });
+        trackHistory.insert(0, { "title": title, "at": _pendingTrackAt }); // when the song started, not commit time
         while (trackHistory.count > 12) trackHistory.remove(trackHistory.count - 1);
     }
     function clearTrackHistory() {
