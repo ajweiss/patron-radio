@@ -88,7 +88,7 @@ PlasmaExtras.Representation {
                     var url = root.currentStationDonate;
                     if (url !== "") {
                         url += url.indexOf("?") > -1 ? "&" : "?";
-                        url += "source=plasma_radio";
+                        url += "source=patron_radio";
                         root.openExternalUrl(url);
                     }
                 }
@@ -357,7 +357,7 @@ PlasmaExtras.Representation {
                     onClicked: {
                         var url = root.currentStationWebsite;
                         url += url.indexOf("?") > -1 ? "&" : "?";
-                        url += "source=plasma_radio";
+                        url += "source=patron_radio";
                         root.openExternalUrl(url);
                     }
                     PlasmaComponents.ToolTip { text: i18nc("@info:tooltip", "Open the station's playlist page"); visible: parent.hovered }
