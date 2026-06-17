@@ -149,6 +149,11 @@ public:
         emitMprisPropertiesChanged(QStringLiteral("org.mpris.MediaPlayer2.Player"), changed);
     }
 
+    // Resolve a plain-text query into the user's configured default search
+    // engine (KDE web shortcuts). Returns "" if none is available; QML then
+    // falls back to a built-in provider. http(s) result only.
+    Q_INVOKABLE QString webSearchUrl(const QString &query) const;
+
 public:
     Q_INVOKABLE void play();
     Q_INVOKABLE void pause();

@@ -19,6 +19,7 @@ target_link_libraries(patronradiocore PUBLIC
     Qt::Network
     Qt::DBus
     KF6::I18n
+    KF6::KIOGui
     ${EBUR128_LIBRARY}
 )
 

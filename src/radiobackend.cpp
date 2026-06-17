@@ -11,6 +11,7 @@
 #include <cmath>
 #include <ebur128.h>
 #include <KLocalizedString>
+#include <KUriFilter>
 
 // Explicit catalog for the few user-facing strings the backend surfaces.
 // A plugin must not claim the process-wide application domain (plasmashell
@@ -328,6 +329,22 @@ void RadioBackend::setSharedSettings(const QString &json)
         return;
     m_sharedSettings = json;
     Q_EMIT sharedSettingsChanged();
+}
+
+QString RadioBackend::webSearchUrl(const QString &query) const
+{
+    const QString q = query.trimmed();
+    if (q.isEmpty())
+        return QString();
+    // NormalTextFilter applies the user's default web shortcut to plain text,
+    // i.e. their configured default search engine.
+    KUriFilterData data(q);
+    if (KUriFilter::self()->filterSearchUri(data, KUriFilter::NormalTextFilter)) {
+        const QUrl u = data.uri();
+        if (u.scheme() == QLatin1String("http") || u.scheme() == QLatin1String("https"))
+            return u.toString();
+    }
+    return QString();
 }
 
 void RadioBackend::setNormalizeLoudness(bool on)

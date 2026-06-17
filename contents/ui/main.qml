@@ -218,6 +218,17 @@ PlasmoidItem {
         Qt.openUrlExternally(url);
     }
 
+    // Look up a recently-played track on the web. The ICY title is free text
+    // (no per-track URL in the stream), so a search is the only reliable target.
+    // Prefer the user's configured default search engine (KDE web shortcuts),
+    // falling back to a built-in provider if none is set.
+    function searchTrack(title) {
+        if (!title) return;
+        var url = RadioBackendModule.RadioBackend.webSearchUrl(title);
+        if (!url) url = "https://duckduckgo.com/?q=" + encodeURIComponent(title);
+        openExternalUrl(url);
+    }
+
     // --- Station Data ---
     ListModel { id: stationModel }
 

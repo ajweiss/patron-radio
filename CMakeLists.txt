@@ -14,7 +14,7 @@ include(KDECompilerSettings NO_POLICY_SCOPE)
 include(FeatureSummary)
 
 find_package(Qt6 ${QT_MIN_VERSION} REQUIRED COMPONENTS Core Qml Quick Multimedia Network DBus Test)
-find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS CoreAddons Config I18n)
+find_package(KF6 ${KF_MIN_VERSION} REQUIRED COMPONENTS CoreAddons Config I18n KIO)
 
 # Build Options
 option(BUILD_TESTING "Build unit tests" ON)

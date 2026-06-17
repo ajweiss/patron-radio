@@ -134,12 +134,29 @@ PlasmaExtras.Representation {
                     clip: true
                     onWidthChanged: nowPlayingCol.resetTrackMarquee()
 
+                    // Clickable only when an actual track is showing (not the city).
+                    readonly property bool clickable: root.currentTrack !== ""
+                    HoverHandler {
+                        id: trackHeaderHover
+                        enabled: trackContainer.clickable
+                        cursorShape: Qt.PointingHandCursor
+                    }
+                    TapHandler {
+                        enabled: trackContainer.clickable
+                        onTapped: root.searchTrack(root.currentTrack)
+                    }
+                    PlasmaComponents.ToolTip {
+                        text: i18nc("@info:tooltip", "Search the web for this track")
+                        visible: trackHeaderHover.hovered
+                    }
+
                     PlasmaComponents.Label {
                         id: trackLabel
                         text: root.currentTrack !== "" ? root.currentTrack : root.currentStationCity
                         textFormat: Text.PlainText
                         opacity: 0.7
                         font.italic: root.currentTrack !== ""
+                        font.underline: trackHeaderHover.hovered
                         // contentWidth-sized + no elide so the marquee can pan it.
                         width: contentWidth
                         elide: Text.ElideNone
@@ -354,6 +371,11 @@ PlasmaExtras.Representation {
                     Layout.fillWidth: true
                     Layout.leftMargin: Kirigami.Units.smallSpacing
                     spacing: Kirigami.Units.smallSpacing
+
+                    // Click a past track to look it up on the web.
+                    HoverHandler { id: trackHover; cursorShape: Qt.PointingHandCursor }
+                    TapHandler { onTapped: root.searchTrack(model.title) }
+
                     PlasmaComponents.Label {
                         text: root.relTime(model.at)
                         opacity: 0.5
@@ -364,10 +386,15 @@ PlasmaExtras.Representation {
                     PlasmaComponents.Label {
                         text: model.title
                         textFormat: Text.PlainText
-                        opacity: 0.85
+                        opacity: trackHover.hovered ? 1.0 : 0.85
+                        font.underline: trackHover.hovered
                         elide: Text.ElideRight
                         Layout.fillWidth: true
                         font.pixelSize: Kirigami.Theme.smallFont.pixelSize
+                    }
+                    PlasmaComponents.ToolTip {
+                        text: i18nc("@info:tooltip", "Search the web for this track")
+                        visible: trackHover.hovered
                     }
                 }
             }
