@@ -108,8 +108,13 @@ PlasmoidItem {
         function onPlayingChanged() {
             if (RadioBackendModule.RadioBackend.playing) {
                 root.playbackState = root.statePlaying;
-            } else if (root.playbackState === root.statePlaying) {
-                root.playbackState = root.stateStopped;
+            } else {
+                if (root.playbackState === root.statePlaying) root.playbackState = root.stateStopped;
+                // The shared backend stopped and we're not mid-reroute: the user no
+                // longer wants playback. Disarm so an output change can't auto-resume.
+                // playingChanged is a shared signal, so every instance disarms in
+                // lockstep — fixing the case where another instance stayed armed.
+                if (!audioRouter.isRouting) root.userRequestedPlayback = false;
             }
             contextActions.update();
         }
