@@ -440,7 +440,7 @@ PlasmaExtras.Representation {
 
                 function activateCurrent() {
                     if (currentIndex <= 0) root.playClosestStation();
-                    else root.playStation(currentIndex - 1);
+                    else root.playStation(currentIndex - 1, "list selection");
                     root.expanded = false;
                 }
                 Keys.onReturnPressed: activateCurrent()
@@ -539,7 +539,7 @@ PlasmaExtras.Representation {
                         if (isAutoLocalItem) {
                             root.playClosestStation();
                         } else {
-                            root.playStation(actualStationIndex);
+                            root.playStation(actualStationIndex, "list selection");
                         }
                         root.expanded = false;
                     }

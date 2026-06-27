@@ -45,7 +45,7 @@ Item {
                 internalModel.append(s)
             }
         } catch(e) {
-            console.warn("Failed to parse stations Json", e)
+            console.warn("patron-radio: failed to parse stations JSON", e)
         }
     }
 

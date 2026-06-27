@@ -44,7 +44,7 @@ RadioBackend::RadioBackend(QObject *parent)
 
     m_stallTimer.setSingleShot(true);
     connect(&m_stallTimer, &QTimer::timeout, this, [this]() {
-        qDebug() << "Playback stalled past timeout; forcing reconnect";
+        qDebug() << "patron-radio:" << "Playback stalled past timeout; forcing reconnect";
         // Route recovery through scheduleReconnect so it inherits the backoff
         // and attempt cap and can't spin forever.
         scheduleReconnect();
@@ -59,7 +59,7 @@ RadioBackend::RadioBackend(QObject *parent)
     dbus.registerService(QStringLiteral("org.mpris.MediaPlayer2.patronradio"));
 
     connect(m_player, &QMediaPlayer::playbackStateChanged, this, [this](QMediaPlayer::PlaybackState state) {
-        qDebug() << "QMediaPlayer state changed to:" << state;
+        qDebug() << "patron-radio:" << "QMediaPlayer state changed to:" << state;
         
         bool isNowPlaying = (state == QMediaPlayer::PlayingState);
         if (m_playing != isNowPlaying) {
@@ -92,7 +92,7 @@ RadioBackend::RadioBackend(QObject *parent)
     });
 
     connect(m_player, &QMediaPlayer::mediaStatusChanged, this, [this](QMediaPlayer::MediaStatus status) {
-        qDebug() << "QMediaPlayer mediaStatus changed to:" << status;
+        qDebug() << "patron-radio:" << "QMediaPlayer mediaStatus changed to:" << status;
         // Only clear the buffering flag when we are fully loaded or have enough buffered
         if (status == QMediaPlayer::BufferedMedia) {
             m_buffering = false;
@@ -101,7 +101,7 @@ RadioBackend::RadioBackend(QObject *parent)
             // A live stream should never "end"; if the backend declares EOF we
             // reconnect immediately rather than waiting out the stall timeout.
             if (m_wantsToPlay && !m_currentUrl.isEmpty() && !m_reconnectTimer.isActive()) {
-                qDebug() << "Unexpected EndOfMedia on live stream; reconnecting";
+                qDebug() << "patron-radio:" << "Unexpected EndOfMedia on live stream; reconnecting";
                 scheduleReconnect();
             }
         } else if (status == QMediaPlayer::StalledMedia || status == QMediaPlayer::BufferingMedia) {
@@ -115,7 +115,7 @@ RadioBackend::RadioBackend(QObject *parent)
     });
 
     connect(m_player, &QMediaPlayer::errorOccurred, this, [this](QMediaPlayer::Error error, const QString &errorString) {
-        qDebug() << "QMediaPlayer ERROR:" << error << errorString;
+        qDebug() << "patron-radio:" << "QMediaPlayer ERROR:" << error << errorString;
         m_lastError = errorString;
         Q_EMIT lastErrorChanged();
         if (m_buffering) {
@@ -126,7 +126,7 @@ RadioBackend::RadioBackend(QObject *parent)
     });
 
     connect(new QMediaDevices(this), &QMediaDevices::audioOutputsChanged, this, [this]() {
-        qDebug() << "Audio outputs changed, notifying QML";
+        qDebug() << "patron-radio:" << "Audio outputs changed, notifying QML";
         Q_EMIT availableOutputsChanged();
     });
 
@@ -150,7 +150,7 @@ connect(m_icyReader, &IcyStreamReader::errorOccurred, this, [this](const QString
 
 connect(m_icyReader, &IcyStreamReader::readyToPlay, this, [this]() {
     if (m_icyReader->isActive()) {
-        qDebug() << "IcyStreamReader is ready, handing device to QMediaPlayer";
+        qDebug() << "patron-radio:" << "IcyStreamReader is ready, handing device to QMediaPlayer";
         m_player->setSourceDevice(m_icyReader, QUrl(m_currentUrl));
         applyEffectiveVolume();
         m_player->play();
@@ -416,7 +416,7 @@ void RadioBackend::setCurrentUrl(const QString &url)
         const QUrl parsed(url);
         const QString scheme = parsed.scheme().toLower();
         if (!parsed.isValid() || (scheme != QLatin1String("http") && scheme != QLatin1String("https"))) {
-            qDebug() << "Refusing non-HTTP(S) stream URL:" << url;
+            qDebug() << "patron-radio:" << "Refusing non-HTTP(S) stream URL:" << url;
             m_lastError = i18nd(PR_DOMAIN, "Refused unsupported stream URL");
             Q_EMIT lastErrorChanged();
             return;
@@ -458,6 +458,7 @@ void RadioBackend::setCurrentUrl(const QString &url)
 }
 
 void RadioBackend::play() {
+    qDebug() << "patron-radio:" << "play()" << m_currentStationName << m_currentUrl;
     m_wantsToPlay = true;
     if (!m_icyReader->isActive()) {
         if (!m_buffering) {
@@ -474,6 +475,7 @@ void RadioBackend::pause() {
     stop();
 }
 void RadioBackend::stop() {
+    qDebug() << "patron-radio:" << "stop()" << m_currentStationName;
     m_wantsToPlay = false;
     m_reconnectTimer.stop();
     m_stallTimer.stop();
@@ -511,16 +513,16 @@ bool RadioBackend::routeAudioToBluetooth(const QString &macAddress)
         QString devDesc = device.description().toLower();
         
         if (devId.contains(normalizedMac) || devDesc.contains(macAddress.toLower())) {
-            qDebug() << "Found matching audio output device:" << device.description();
+            qDebug() << "patron-radio:" << "Found matching audio output device:" << device.description();
             m_audioOutput->setDevice(device);
             return true;
         }
     }
     
-    qDebug() << "Could not find audio output matching MAC address:" << macAddress;
-    qDebug() << "Available devices:";
+    qDebug() << "patron-radio:" << "Could not find audio output matching MAC address:" << macAddress;
+    qDebug() << "patron-radio:" << "Available devices:";
     for (const QAudioDevice &device : outputs) {
-        qDebug() << "  - ID:" << device.id() << "Desc:" << device.description();
+        qDebug() << "patron-radio:" << "  - ID:" << device.id() << "Desc:" << device.description();
     }
     return false;
 }
@@ -530,17 +532,17 @@ void RadioBackend::setAudioOutput(const QString &deviceId)
     const QList<QAudioDevice> outputs = QMediaDevices::audioOutputs();
     for (const QAudioDevice &device : outputs) {
         if (QString::fromUtf8(device.id()) == deviceId) {
-            qDebug() << "Explicitly setting audio output to:" << device.description();
+            qDebug() << "patron-radio:" << "Explicitly setting audio output to:" << device.description();
             m_audioOutput->setDevice(device);
             return;
         }
     }
-    qDebug() << "Failed to find explicit audio output device ID:" << deviceId;
+    qDebug() << "patron-radio:" << "Failed to find explicit audio output device ID:" << deviceId;
 }
 
 void RadioBackend::resetAudioOutput()
 {
-    qDebug() << "Resetting audio output to system default";
+    qDebug() << "patron-radio:" << "Resetting audio output to system default";
     m_audioOutput->setDevice(QMediaDevices::defaultAudioOutput());
 }
 
@@ -612,9 +614,9 @@ void RadioBackend::takeSleepInhibitLock()
     QDBusReply<QDBusUnixFileDescriptor> reply = QDBusConnection::systemBus().call(msg);
     if (reply.isValid()) {
         m_sleepInhibitFd = reply.value();
-        qDebug() << "Sleep inhibit lock acquired";
+        qDebug() << "patron-radio:" << "Sleep inhibit lock acquired";
     } else {
-        qDebug() << "Failed to acquire sleep inhibit lock:" << reply.error().message();
+        qDebug() << "patron-radio:" << "Failed to acquire sleep inhibit lock:" << reply.error().message();
     }
 }
 
@@ -623,7 +625,7 @@ void RadioBackend::releaseSleepInhibitLock()
     if (!m_sleepInhibitFd.isValid())
         return;
     m_sleepInhibitFd = QDBusUnixFileDescriptor(); // closes the fd
-    qDebug() << "Sleep inhibit lock released";
+    qDebug() << "patron-radio:" << "Sleep inhibit lock released";
 }
 
 void RadioBackend::scheduleReconnect()
@@ -632,7 +634,7 @@ void RadioBackend::scheduleReconnect()
         return;
 
     if (m_reconnectAttempts >= RECONNECT_MAX_ATTEMPTS) {
-        qDebug() << "Reconnect limit reached (" << RECONNECT_MAX_ATTEMPTS << " attempts), giving up";
+        qDebug() << "patron-radio:" << "Reconnect limit reached (" << RECONNECT_MAX_ATTEMPTS << " attempts), giving up";
         m_wantsToPlay = false;
         return;
     }
@@ -648,7 +650,7 @@ void RadioBackend::scheduleReconnect()
     int jitter = QRandomGenerator::global()->bounded(m_reconnectDelay / 2) - (m_reconnectDelay / 4);
     int delay = m_reconnectDelay + jitter;
 
-    qDebug() << "Scheduling reconnect in" << delay << "ms (base" << m_reconnectDelay << "+ jitter" << jitter << ")";
+    qDebug() << "patron-radio:" << "Scheduling reconnect in" << delay << "ms (base" << m_reconnectDelay << "+ jitter" << jitter << ")";
     m_reconnectTimer.start(delay);
 }
 
@@ -657,7 +659,7 @@ void RadioBackend::attemptReconnect()
     if (!m_wantsToPlay || m_currentUrl.isEmpty())
         return;
 
-    qDebug() << "Attempting reconnect to" << m_currentUrl;
+    qDebug() << "patron-radio:" << "Attempting reconnect to" << m_currentUrl;
     m_stallTimer.stop();
     m_icyReader->stop();
     m_player->stop();

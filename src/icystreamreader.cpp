@@ -49,7 +49,7 @@ void IcyStreamReader::start(const QUrl &url)
     stop();
 
     if (isDisallowedUrl(url)) {
-        qDebug() << "Refusing to open disallowed stream URL:" << url.toString();
+        qDebug() << "patron-radio:" << "Refusing to open disallowed stream URL:" << url.toString();
         Q_EMIT errorOccurred(QStringLiteral("Refused an unsupported or non-routable stream URL"));
         return;
     }
@@ -64,7 +64,7 @@ void IcyStreamReader::start(const QUrl &url)
     // the initial URL, and a redirect could point at an internal host.
     connect(m_reply, &QNetworkReply::redirected, this, [this](const QUrl &target) {
         if (isDisallowedUrl(target)) {
-            qDebug() << "Blocking redirect to disallowed host:" << target.toString();
+            qDebug() << "patron-radio:" << "Blocking redirect to disallowed host:" << target.toString();
             if (m_reply)
                 m_reply->abort();
             Q_EMIT errorOccurred(QStringLiteral("Refused a redirect to a non-routable host"));
@@ -169,7 +169,7 @@ void IcyStreamReader::onFinished()
 {
     if (m_reply && m_reply->error() != QNetworkReply::NoError && m_reply->error() != QNetworkReply::OperationCanceledError) {
         QString err = m_reply->errorString();
-        qDebug() << "IcyStreamReader network error:" << err;
+        qDebug() << "patron-radio:" << "IcyStreamReader network error:" << err;
         Q_EMIT errorOccurred(err);
     }
 }
@@ -201,7 +201,7 @@ void IcyStreamReader::onReadyRead()
         const qint64 bytesPerSec = (qint64)br * 1000 / 8;
         const qint64 threshold = bytesPerSec * READY_TARGET_MS / 1000;
         m_readyThreshold = (int)qBound((qint64)READY_FLOOR, threshold, (qint64)(MAX_BUFFER / 2));
-        qDebug() << "IcyStreamReader pre-play threshold:" << m_readyThreshold
+        qDebug() << "patron-radio:" << "IcyStreamReader pre-play threshold:" << m_readyThreshold
                  << "bytes (icy-br" << br << "kbps)";
     }
 

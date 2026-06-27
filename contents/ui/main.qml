@@ -131,12 +131,12 @@ PlasmoidItem {
         }
         function onNextRequested() {
             if (stationModel.count > 0) {
-                root.playStation((root.currentStationIndex + 1) % stationModel.count);
+                root.playStation((root.currentStationIndex + 1) % stationModel.count, "MPRIS next");
             }
         }
         function onPreviousRequested() {
             if (stationModel.count > 0) {
-                root.playStation((root.currentStationIndex - 1 + stationModel.count) % stationModel.count);
+                root.playStation((root.currentStationIndex - 1 + stationModel.count) % stationModel.count, "MPRIS previous");
             }
         }
         // Layer A: the backend is shared across instances, so follow whatever it's
@@ -166,13 +166,26 @@ PlasmoidItem {
     }
 
     // --- Playback Control ---
+    // Diagnostic trail for "started/stopped on its own" reports: every playback
+    // start/stop logs its trigger, plus the state it fired from. Grep the journal
+    // for "Patron Radio: play" / "Patron Radio: stop".
+    function logPlayTrigger(reason) {
+        console.info("patron-radio: play trigger =", reason,
+                     "| state =", playbackState, "| userRequested =", userRequestedPlayback);
+    }
+    function logStopTrigger(reason) {
+        console.info("patron-radio: stop trigger =", reason, "| state =", playbackState);
+    }
+
     function togglePlay() {
         if (isPlaying) {
+            logStopTrigger("user toggle");
             userRequestedPlayback = false;
             RadioBackendModule.RadioBackend.stop();
             playbackState = stateStopped;
             Plasmoid.configuration.wasPlaying = false;
         } else {
+            logPlayTrigger("user toggle");
             userRequestedPlayback = true;
             clearTrackHistory();
             playbackState = stateBuffering;
@@ -186,8 +199,9 @@ PlasmoidItem {
         }
     }
 
-    function playStation(index) {
+    function playStation(index, reason) {
         if (currentStationIndex !== index || (!isPlaying && !isBroken)) {
+            logPlayTrigger("playStation (" + (reason || "station selected") + ")");
             userRequestedPlayback = true;
             currentStationIndex = index;
             clearTrackHistory();
@@ -212,7 +226,7 @@ PlasmoidItem {
     // can't launch an arbitrary URI-scheme handler.
     function openExternalUrl(url) {
         if (typeof url !== "string" || !/^https?:\/\//i.test(url)) {
-            console.warn("Patron Radio: refusing to open non-HTTP(S) URL:", url);
+            console.warn("patron-radio: refusing to open non-HTTP(S) URL:", url);
             return;
         }
         Qt.openUrlExternally(url);
@@ -516,7 +530,7 @@ PlasmoidItem {
         var resumePlay = Plasmoid.configuration.resumePlaybackOnRestart && Plasmoid.configuration.wasPlaying;
 
         if (autoLocal) stationApi.updateClosestStation(autoPlay || resumePlay);
-        else if (autoPlay || resumePlay) playStation(currentStationIndex);
+        else if (autoPlay || resumePlay) playStation(currentStationIndex, resumePlay ? "startup resume" : "startup autoplay");
     }
 
     compactRepresentation: Component { CompactRepresentation {} }

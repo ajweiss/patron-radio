@@ -61,6 +61,7 @@ Item {
         }
 
         if (root.userRequestedPlayback && root.playbackState !== root.statePlaying && root.playbackState !== root.stateBroken) {
+            root.logPlayTrigger("routing auto-resume (output change)");
             RadioBackendModule.RadioBackend.play();
         }
 
@@ -95,7 +96,7 @@ Item {
                 } catch(e) {}
                 if (autoplayList.indexOf(addr) !== -1) {
                     root.userRequestedPlayback = true;
-                    if (root.playbackState === root.stateStopped) root.playStation(root.currentStationIndex);
+                    if (root.playbackState === root.stateStopped) root.playStation(root.currentStationIndex, "bluetooth autoplay (" + addr + ")");
                 }
                 btRoutingTimer.restart();
             }

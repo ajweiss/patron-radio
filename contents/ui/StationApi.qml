@@ -39,6 +39,7 @@ Item {
                             root.playbackState = root.stateBuffering;
                             RadioBackendModule.RadioBackend.knownLoudness = NaN;
                             RadioBackendModule.RadioBackend.currentUrl = foundUrl;
+                            root.logPlayTrigger("fix broken stream");
                             RadioBackendModule.RadioBackend.play();
                         } else { root.playbackState = root.stateBroken; root.currentTrack = i18n("Could not find a working replacement stream."); }
                     } catch(e) { root.playbackState = root.stateBroken; root.currentTrack = i18n("Error parsing search results."); }
@@ -82,7 +83,7 @@ Item {
                             }
                         }
                         if (closestIndex !== -1) {
-                            if (forcePlay) { root.playStation(closestIndex); }
+                            if (forcePlay) { root.playStation(closestIndex, "closest station"); }
                             else if (closestIndex !== root.currentStationIndex) { if (!root.isPlaying) { root.currentStationIndex = closestIndex; } }
                         }
                     } catch(e) {
