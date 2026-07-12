@@ -6,9 +6,11 @@
 #include "../src/radiobackend.h"
 
 // Helpers
-static const QString FAKE_URL_A = QStringLiteral("http://example.com/stream_a.mp3");
-static const QString FAKE_URL_B = QStringLiteral("http://example.com/stream_b.mp3");
-static const QString FAKE_URL_C = QStringLiteral("http://example.com/stream_c.mp3");
+// .invalid is reserved (RFC 2606) and never resolves, so tests exercise the
+// connection machinery without sending traffic to any real host.
+static const QString FAKE_URL_A = QStringLiteral("http://radio.invalid/stream_a.mp3");
+static const QString FAKE_URL_B = QStringLiteral("http://radio.invalid/stream_b.mp3");
+static const QString FAKE_URL_C = QStringLiteral("http://radio.invalid/stream_c.mp3");
 
 class TestRadioBackend : public QObject
 {
@@ -82,12 +84,12 @@ private Q_SLOTS:
         RadioBackend b;
         for (int i = 0; i < 20; i++) {
             b.setCurrentStationName(QStringLiteral("Station %1").arg(i));
-            b.setCurrentUrl(QStringLiteral("http://example.com/stream_%1.mp3").arg(i));
+            b.setCurrentUrl(QStringLiteral("http://radio.invalid/stream_%1.mp3").arg(i));
             b.play();
         }
         // After rapid switching, state should be consistent
         QCOMPARE(b.currentStationName(), QStringLiteral("Station 19"));
-        QCOMPARE(b.currentUrl(), QStringLiteral("http://example.com/stream_19.mp3"));
+        QCOMPARE(b.currentUrl(), QStringLiteral("http://radio.invalid/stream_19.mp3"));
         QCOMPARE(b.streamTitle(), QString()); // cleared on each URL change
         b.stop();
         QCOMPARE(b.isPlaying(), false);
@@ -376,7 +378,7 @@ private Q_SLOTS:
         auto *b = new RadioBackend();
         b->setCurrentUrl(FAKE_URL_A);
         b->play();
-        // The ICY reader will fail to connect to example.com (or timeout)
+        // The ICY reader will fail to connect to radio.invalid (or timeout)
         // and schedule a reconnect. Destroying should clean up the timer.
         delete b;
     }
@@ -391,7 +393,7 @@ private Q_SLOTS:
         for (int i = 0; i < 50; i++) {
             RadioBackend b;
             b.setCurrentStationName(QStringLiteral("Station"));
-            b.setCurrentUrl(QStringLiteral("http://example.com/%1.mp3").arg(i));
+            b.setCurrentUrl(QStringLiteral("http://radio.invalid/%1.mp3").arg(i));
             b.play();
             b.stop();
         }
@@ -403,7 +405,7 @@ private Q_SLOTS:
         // Simulate a user clicking through stations fast
         for (int i = 0; i < 30; i++) {
             b.setCurrentStationName(QStringLiteral("Station %1").arg(i));
-            b.setCurrentUrl(QStringLiteral("http://example.com/%1.mp3").arg(i));
+            b.setCurrentUrl(QStringLiteral("http://radio.invalid/%1.mp3").arg(i));
             b.play();
         }
         // Verify final state is sane

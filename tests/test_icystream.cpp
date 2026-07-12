@@ -19,7 +19,7 @@ private Q_SLOTS:
     void testStartStop()
     {
         IcyStreamReader reader;
-        QUrl url(QStringLiteral("http://example.com/stream.mp3"));
+        QUrl url(QStringLiteral("http://radio.invalid/stream.mp3"));
 
         reader.start(url);
         QCOMPARE(reader.isActive(), true);
@@ -32,7 +32,7 @@ private Q_SLOTS:
     void testStopClearsBuffer()
     {
         IcyStreamReader reader;
-        reader.start(QUrl(QStringLiteral("http://example.com/stream.mp3")));
+        reader.start(QUrl(QStringLiteral("http://radio.invalid/stream.mp3")));
         QCOMPARE(reader.isActive(), true);
 
         reader.stop();
@@ -51,7 +51,7 @@ private Q_SLOTS:
     void testRestartClearsState()
     {
         IcyStreamReader reader;
-        QUrl url(QStringLiteral("http://example.com/stream.mp3"));
+        QUrl url(QStringLiteral("http://radio.invalid/stream.mp3"));
 
         reader.start(url);
         QCOMPARE(reader.isActive(), true);
