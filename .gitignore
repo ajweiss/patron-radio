@@ -28,3 +28,6 @@ qrc_*.cpp
 trace.log
 viewer_log.txt
 bt_pid.txt
+
+# Claude Code local settings
+.claude/settings.local.json
