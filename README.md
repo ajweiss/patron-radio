@@ -100,6 +100,16 @@ If you prefer to build manually:
 
 After installation, add the **Patron Radio** widget to your Plasma panel or desktop via the standard "Add Widgets" menu.
 
+## Privacy
+
+Patron Radio contacts only the services needed to do its job, and only when you use the corresponding feature:
+
+*   **Station stream servers** -- directly, when you play a station.
+*   **get.geojs.io** -- IP-based geolocation, used only by "Play Nearest Station" and the *Select closest local station on startup* option.
+*   **radio-browser.info** -- a community station directory, queried only when you use the "Fix" tool to find a replacement stream.
+
+There is no telemetry and no account of any kind.
+
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for code style, architecture constraints, git workflow, and testing guidelines. AI coding agents: see [AGENTS.md](AGENTS.md).
