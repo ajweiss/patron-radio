@@ -190,6 +190,10 @@ PlasmoidItem {
             playbackState = stateStopped;
             Plasmoid.configuration.wasPlaying = false;
         } else {
+            if (!hasCurrentStation) {
+                console.warn("patron-radio: cannot play, station list is empty or index is invalid");
+                return;
+            }
             logPlayTrigger("user toggle");
             userRequestedPlayback = true;
             clearTrackHistory();
@@ -205,6 +209,10 @@ PlasmoidItem {
     }
 
     function playStation(index, reason) {
+        if (index < 0 || index >= stationModel.count) {
+            console.warn("patron-radio: cannot play station, index", index, "is out of range");
+            return;
+        }
         if (currentStationIndex !== index || (!isPlaying && !isBroken)) {
             logPlayTrigger("playStation (" + (reason || "station selected") + ")");
             userRequestedPlayback = true;
