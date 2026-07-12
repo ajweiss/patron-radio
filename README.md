@@ -53,17 +53,17 @@ To build and run Patron Radio, you need the following development packages:
 
 ### Fedora
 ```bash
-sudo dnf install qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-bluez-qt-devel libebur128-devel cmake extra-cmake-modules
+sudo dnf install qt6-qtdeclarative-devel qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kio-devel kf6-bluez-qt-devel libebur128-devel cmake extra-cmake-modules
 ```
 
 ### Arch Linux
 ```bash
-sudo pacman -S qt6-multimedia kcoreaddons kconfig ki18n bluez-qt libebur128 cmake extra-cmake-modules
+sudo pacman -S qt6-declarative qt6-multimedia kcoreaddons kconfig ki18n kio bluez-qt libebur128 cmake extra-cmake-modules
 ```
 
 ### Ubuntu / KDE Neon
 ```bash
-sudo apt install qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6bluezqt-dev libebur128-dev cmake extra-cmake-modules
+sudo apt install qt6-declarative-dev qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6kio-dev libkf6bluezqt-dev libebur128-dev cmake extra-cmake-modules
 ```
 
 ## Build & Installation
@@ -83,9 +83,9 @@ If you prefer to build manually:
     ```bash
     mkdir build && cd build
     ```
-2.  **Configure and build**:
+2.  **Configure and build** (installing to your user directory, no root needed):
     ```bash
-    cmake ..
+    cmake .. -DCMAKE_INSTALL_PREFIX=$HOME/.local
     make
     ```
 3.  **Install**:
@@ -93,6 +93,8 @@ If you prefer to build manually:
     make install
     systemctl --user restart plasma-plasmashell
     ```
+
+    For a system-wide install instead, configure with `-DCMAKE_INSTALL_PREFIX=/usr` and run `sudo make install`.
 
 ## Usage
 
