@@ -75,6 +75,7 @@ void IcyStreamReader::start(const QUrl &url)
         QMutexLocker locker(&m_bufferMutex);
         m_audioBuffer.clear();
         m_active = true;
+        m_replyFinished = false;
     }
     m_metaBuffer.clear();
     m_audioBytesRead = 0;
@@ -100,6 +101,7 @@ void IcyStreamReader::stop()
         QMutexLocker locker(&m_bufferMutex);
         m_audioBuffer.clear();
         m_active = false;
+        m_replyFinished = true;
         m_dataReady.wakeAll(); // release any reader blocked in readData()
     }
     m_readyToPlayEmitted = false;
@@ -152,13 +154,17 @@ qint64 IcyStreamReader::bytesAvailable() const
 
 bool IcyStreamReader::atEnd() const
 {
-    if (m_reply && !m_reply->isFinished()) {
-        return false;
-    }
-    bool bufferEmpty;
+    // Runs on the QtMultimedia worker thread: use the mutex-guarded mirror of
+    // the reply's finished state instead of m_reply, which the GUI thread may
+    // be aborting/nulling concurrently.
+    bool finished, bufferEmpty;
     {
         QMutexLocker locker(&m_bufferMutex);
+        finished = m_replyFinished;
         bufferEmpty = m_audioBuffer.isEmpty();
+    }
+    if (!finished) {
+        return false;
     }
     // QIODevice::atEnd() calls the virtual bytesAvailable(), which re-locks the
     // mutex, so it must run *after* we release ours (the mutex is non-recursive).
@@ -167,6 +173,10 @@ bool IcyStreamReader::atEnd() const
 
 void IcyStreamReader::onFinished()
 {
+    {
+        QMutexLocker locker(&m_bufferMutex);
+        m_replyFinished = true;
+    }
     if (m_reply && m_reply->error() != QNetworkReply::NoError && m_reply->error() != QNetworkReply::OperationCanceledError) {
         QString err = m_reply->errorString();
         qDebug() << "patron-radio:" << "IcyStreamReader network error:" << err;

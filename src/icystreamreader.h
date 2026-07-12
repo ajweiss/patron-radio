@@ -56,6 +56,10 @@ private:
     // mis-reads a 0-length read on a live sequential source as end-of-stream.
     QWaitCondition m_dataReady;
     bool m_active = false;          // true between start() and stop(); guarded by m_bufferMutex
+    // Mirrors m_reply's finished state for atEnd(), which the QtMultimedia
+    // backend calls on its worker thread — it must not touch m_reply itself
+    // (created/aborted/nulled on the GUI thread). Guarded by m_bufferMutex.
+    bool m_replyFinished = true;
 
     qint64 m_metaInt;        // ICY metadata interval (bytes); -1 = none/invalid. 64-bit: hostile headers
     qint64 m_audioBytesRead; // running count toward m_metaInt — guard against signed overflow
