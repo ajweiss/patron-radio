@@ -636,6 +636,15 @@ void RadioBackend::scheduleReconnect()
     if (m_reconnectAttempts >= RECONNECT_MAX_ATTEMPTS) {
         qDebug() << "patron-radio:" << "Reconnect limit reached (" << RECONNECT_MAX_ATTEMPTS << " attempts), giving up";
         m_wantsToPlay = false;
+        // Surface the failure. A stall-triggered reconnect never set lastError,
+        // so without this the UI would sit on the buffering spinner forever
+        // instead of offering the "Fix" action.
+        m_lastError = i18nd(PR_DOMAIN, "Stream unavailable after repeated reconnect attempts");
+        Q_EMIT lastErrorChanged();
+        if (m_buffering) {
+            m_buffering = false;
+            Q_EMIT bufferingChanged();
+        }
         return;
     }
 
