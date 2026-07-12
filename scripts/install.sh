@@ -16,8 +16,10 @@ mkdir build
 cd build
 
 # 2. Configure and Compile
+# Install into the user's home so no root is needed; plasmashell picks up
+# plasmoids from ~/.local/share/plasma/plasmoids.
 echo "Configuring project with CMake..."
-cmake ..
+cmake .. -DCMAKE_INSTALL_PREFIX="$HOME/.local"
 
 echo "Building C++ plugin..."
 make -j$(nproc)
