@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    # Fedora carries current KF6/Qt6 packages; the Ubuntu LTS runners don't.
+    container: fedora:42
+    steps:
+      - name: Install dependencies
+        run: >
+          dnf install -y --setopt=install_weak_deps=False
+          gcc-c++ cmake extra-cmake-modules git
+          dbus-daemon dbus-tools
+          qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qtmultimedia-devel
+          kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kio-devel
+          libebur128-devel
+
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
+
+      - name: Build
+        run: cmake --build build -j"$(nproc)"
+
+      - name: Test
+        # A session bus keeps the MPRIS registration paths realistic.
+        run: dbus-run-session -- ctest --test-dir build --output-on-failure
