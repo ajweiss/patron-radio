@@ -1,0 +1,11 @@
+# Not a launchable app (the player lives inside plasmashell); this entry exists
+# so MPRIS controllers can resolve the DesktopEntry the backend advertises to a
+# name and icon. NoDisplay keeps it out of launchers.
+[Desktop Entry]
+Type=Application
+Name=Patron Radio
+Comment=Streaming independent and public radio stations
+Icon=radio
+Exec=plasmashell
+NoDisplay=true
+Categories=AudioVideo;Audio;Player;
