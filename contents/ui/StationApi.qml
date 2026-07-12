@@ -9,10 +9,17 @@ Item {
     function fixCurrentStream() {
         if (root.playbackState === root.stateFixing) return;
         var stationName = root.currentStationName;
-        var searchName = stationName.replace(" 90.3FM", "").replace(" 106.7FM", "").replace(" (RNE)", "").trim();
+        // Strip qualifiers that hurt directory matching: a trailing
+        // parenthesized network ("Radio 3 (RNE)") or FM frequency ("KEXP 90.3FM").
+        var searchName = stationName
+            .replace(/\s*\([^)]*\)\s*$/, "")
+            .replace(/\s+\d+(\.\d+)?\s*FM$/i, "")
+            .trim();
         root.playbackState = root.stateFixing;
         root.currentTrack = i18n("Searching for new stream...");
-        var apiUrl = "https://de1.api.radio-browser.info/json/stations/search?name=" + encodeURIComponent(searchName) + "&hidebroken=true&order=clickcount&reverse=true&limit=3";
+        // all.api.radio-browser.info round-robins across the project's mirrors;
+        // the docs advise against pinning a specific mirror (they come and go).
+        var apiUrl = "https://all.api.radio-browser.info/json/stations/search?name=" + encodeURIComponent(searchName) + "&hidebroken=true&order=clickcount&reverse=true&limit=3";
         var xhr = new XMLHttpRequest();
         xhr.open("GET", apiUrl, true);
         xhr.onreadystatechange = function() {
