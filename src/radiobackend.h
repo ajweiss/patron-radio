@@ -208,6 +208,7 @@ private:
     double m_volume = 1.0;
     bool m_inhibitSleep = false;
     QDBusUnixFileDescriptor m_sleepInhibitFd;
+    bool m_sleepInhibitPending = false; // an async Inhibit call is in flight
 
     QTimer m_reconnectTimer;
     int m_reconnectDelay = 0;

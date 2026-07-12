@@ -2,7 +2,8 @@
 #include <QDebug>
 #include <QDBusConnection>
 #include <QDBusMessage>
-#include <QDBusReply>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
 #include <QDBusUnixFileDescriptor>
 #include <QMediaMetaData>
 #include <QRandomGenerator>
@@ -597,8 +598,8 @@ void RadioBackend::setInhibitSleep(bool inhibit)
 
 void RadioBackend::takeSleepInhibitLock()
 {
-    if (m_sleepInhibitFd.isValid())
-        return; // already held
+    if (m_sleepInhibitFd.isValid() || m_sleepInhibitPending)
+        return; // already held or being acquired
 
     QDBusMessage msg = QDBusMessage::createMethodCall(
         QStringLiteral("org.freedesktop.login1"),
@@ -611,13 +612,27 @@ void RadioBackend::takeSleepInhibitLock()
         << i18nd(PR_DOMAIN, "Playing audio")    // why (shown in sleep-inhibitor UIs)
         << QStringLiteral("block");             // mode
 
-    QDBusReply<QDBusUnixFileDescriptor> reply = QDBusConnection::systemBus().call(msg);
-    if (reply.isValid()) {
-        m_sleepInhibitFd = reply.value();
-        qDebug() << "patron-radio:" << "Sleep inhibit lock acquired";
-    } else {
-        qDebug() << "patron-radio:" << "Failed to acquire sleep inhibit lock:" << reply.error().message();
-    }
+    // Async: this runs on plasmashell's GUI thread, and a blocking call()
+    // would freeze the whole shell for the D-Bus timeout if logind stalls.
+    m_sleepInhibitPending = true;
+    auto *watcher = new QDBusPendingCallWatcher(QDBusConnection::systemBus().asyncCall(msg), this);
+    connect(watcher, &QDBusPendingCallWatcher::finished, this, [this](QDBusPendingCallWatcher *w) {
+        m_sleepInhibitPending = false;
+        QDBusPendingReply<QDBusUnixFileDescriptor> reply = *w;
+        w->deleteLater();
+        if (!reply.isValid()) {
+            qDebug() << "patron-radio:" << "Failed to acquire sleep inhibit lock:" << reply.error().message();
+            return;
+        }
+        if (m_inhibitSleep && m_playing) {
+            m_sleepInhibitFd = reply.value();
+            qDebug() << "patron-radio:" << "Sleep inhibit lock acquired";
+        } else {
+            // Playback stopped (or inhibit was turned off) while the call was
+            // in flight; drop the fd so the lock releases immediately.
+            qDebug() << "patron-radio:" << "Discarding sleep inhibit lock acquired after stop";
+        }
+    });
 }
 
 void RadioBackend::releaseSleepInhibitLock()
