@@ -136,10 +136,15 @@ Item {
                 spacing: Kirigami.Units.smallSpacing
 
                 delegate: Item {
+                    id: stationDelegate
                     width: stationList.width
                     height: layout.implicitHeight
-                    
+
                     property bool isExpanded: false
+                    // Captured here because inside the ComboBox below, the
+                    // unqualified `model` resolves to the ComboBox's own string
+                    // model, not this delegate's model role.
+                    readonly property string stationIcon: model.icon || "audio-x-generic"
 
                     ColumnLayout {
                         id: layout
@@ -313,14 +318,13 @@ Item {
                                     model: [i18nc("station type", "Music"), i18nc("station type", "Talk / Arts"), i18nc("station type", "Mixed / Variety")]
                                     
                                     currentIndex: {
-                                        var currentIcon = model.icon || "audio-x-generic"
-                                        var idx = iconMapping.indexOf(currentIcon)
+                                        var idx = iconMapping.indexOf(stationDelegate.stationIcon)
                                         return idx !== -1 ? idx : 0
                                     }
-                                    
+
                                     onActivated: {
                                         var selectedIcon = iconMapping[currentIndex]
-                                        if (model.icon !== selectedIcon) {
+                                        if (stationDelegate.stationIcon !== selectedIcon) {
                                             internalModel.setProperty(index, "icon", selectedIcon)
                                             saveModel()
                                         }
