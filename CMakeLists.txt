@@ -27,7 +27,7 @@ install(FILES metadata.json DESTINATION ${KDE_INSTALL_DATADIR}/plasma/plasmoids/
 
 # Desktop entry so MPRIS controllers can resolve the player's name and icon
 # (the backend advertises DesktopEntry=com.signal11.patronradio).
-install(FILES com.signal11.patronradio.desktop DESTINATION ${KDE_INSTALL_APPSDIR})
+install(FILES com.signal11.patronradio.desktop DESTINATION ${KDE_INSTALL_APPDIR})
 
 # Translations: compile and install any po/<lang>/<domain>.po catalogs.
 # Harmless until translations exist; the .pot template lives in po/.
