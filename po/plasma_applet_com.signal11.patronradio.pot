@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Patron Radio\n"
 "Report-Msgid-Bugs-To: https://github.com/ajweiss/patron-radio/issues\n"
-"POT-Creation-Date: 2026-06-16 20:41-0400\n"
+"POT-Creation-Date: 2026-07-12 13:33-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -214,137 +214,137 @@ msgstr ""
 msgid "Add New Station"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:170
+#: contents/ui/configGeneral.qml:175
 #, kde-format
 msgid "Unnamed Station"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:185
+#: contents/ui/configGeneral.qml:190
 #, kde-format
 msgid "Delete Station"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:213
+#: contents/ui/configGeneral.qml:218
 #, kde-format
 msgctxt "station field label"
 msgid "Name:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:216
+#: contents/ui/configGeneral.qml:221
 #, kde-format
 msgid "Station Name"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:226
+#: contents/ui/configGeneral.qml:231
 #, kde-format
 msgctxt "station field label"
 msgid "Location:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:229
+#: contents/ui/configGeneral.qml:234
 #, kde-format
 msgid "City, ST"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:239
+#: contents/ui/configGeneral.qml:244
 #, kde-format
 msgctxt "station field label"
 msgid "Stream URL:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:252
+#: contents/ui/configGeneral.qml:257
 #, kde-format
 msgctxt "station field label"
 msgid "Website URL:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:265
+#: contents/ui/configGeneral.qml:270
 #, kde-format
 msgctxt "station field label"
 msgid "Donate URL:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:278
+#: contents/ui/configGeneral.qml:283
 #, kde-format
 msgctxt "station field label"
 msgid "Coordinates:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:285
+#: contents/ui/configGeneral.qml:290
 #, kde-format
 msgid "Latitude (e.g. 40.71)"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:296
+#: contents/ui/configGeneral.qml:301
 #, kde-format
 msgid "Longitude (e.g. -74.00)"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:307
+#: contents/ui/configGeneral.qml:312
 #, kde-format
 msgctxt "station field label"
 msgid "Station Type:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:313
+#: contents/ui/configGeneral.qml:318
 #, kde-format
 msgctxt "station type"
 msgid "Music"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:313
+#: contents/ui/configGeneral.qml:318
 #, kde-format
 msgctxt "station type"
 msgid "Talk / Arts"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:313
+#: contents/ui/configGeneral.qml:318
 #, kde-format
 msgctxt "station type"
 msgid "Mixed / Variety"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:332
+#: contents/ui/configGeneral.qml:336
 #, kde-format
 msgctxt "station field label"
 msgid "Level:"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:342
+#: contents/ui/configGeneral.qml:346
 #, kde-format
 msgctxt "loudness not yet measured"
 msgid "measuring…"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:343
+#: contents/ui/configGeneral.qml:347
 #, kde-format
 msgctxt "decibel attenuation value"
 msgid "%1 dB"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:344
+#: contents/ui/configGeneral.qml:348
 #, kde-format
 msgctxt "loudness: <dB>  (<n> LUFS)"
 msgid "%1   (%2 LUFS)"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:350 contents/ui/configLoudness.qml:38
+#: contents/ui/configGeneral.qml:354 contents/ui/configLoudness.qml:38
 #, kde-format
 msgid "Measure levels automatically"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:350
+#: contents/ui/configGeneral.qml:354
 #, kde-format
 msgctxt "%1 is the name of a settings checkbox"
 msgid "Turn off \"%1\" (Loudness tab) to set this manually."
 msgstr ""
 
-#: contents/ui/configGeneral.qml:360
+#: contents/ui/configGeneral.qml:364
 #, kde-format
 msgid "0"
 msgstr ""
 
-#: contents/ui/configGeneral.qml:376
+#: contents/ui/configGeneral.qml:380
 #, kde-format
 msgid "dB attenuation (boost not possible)"
 msgstr ""
@@ -402,49 +402,56 @@ msgctxt "@info:tooltip, %1 is a station name"
 msgid "Support %1"
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:220
+#: contents/ui/FullRepresentation.qml:149
+#: contents/ui/FullRepresentation.qml:396
+#, kde-format
+msgctxt "@info:tooltip"
+msgid "Search the web for this track"
+msgstr ""
+
+#: contents/ui/FullRepresentation.qml:237
 #, kde-format
 msgctxt "@info:tooltip overflow menu button"
 msgid "More actions"
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:248
+#: contents/ui/FullRepresentation.qml:265
 #, kde-format
 msgctxt "@action:inmenu"
 msgid "Configure Patron Radio…"
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:324
+#: contents/ui/FullRepresentation.qml:341
 #, kde-format
 msgctxt "@title:group header for the track history list"
 msgid "Recently played"
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:332
+#: contents/ui/FullRepresentation.qml:349
 #, kde-format
 msgctxt "@action:button opens the station's playlist webpage"
 msgid "Playlist"
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:346
+#: contents/ui/FullRepresentation.qml:363
 #, kde-format
 msgctxt "@info:tooltip"
 msgid "Open the station's playlist page"
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:484
+#: contents/ui/FullRepresentation.qml:511
 #, kde-format
 msgctxt "@item:inlistbox locating the nearest station"
 msgid "Locating..."
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:484
+#: contents/ui/FullRepresentation.qml:511
 #, kde-format
 msgctxt "@item:inlistbox plays the geographically nearest station"
 msgid "Play Nearest Station"
 msgstr ""
 
-#: contents/ui/FullRepresentation.qml:527
+#: contents/ui/FullRepresentation.qml:554
 #, kde-format
 msgctxt "@info:tooltip"
 msgid ""
@@ -535,13 +542,13 @@ msgctxt "@info:tooltip, %1 is the track title"
 msgid "Now Playing: %1"
 msgstr ""
 
-#: contents/ui/main.qml:265
+#: contents/ui/main.qml:317
 #, kde-format
 msgctxt "@info relative time, under a minute ago"
 msgid "now"
 msgstr ""
 
-#: contents/ui/main.qml:267
+#: contents/ui/main.qml:319
 #, kde-format
 msgctxt "@info abbreviated minutes ago, %1 is a number"
 msgid "%1m"
@@ -549,7 +556,7 @@ msgid_plural "%1m"
 msgstr[0] ""
 msgstr[1] ""
 
-#: contents/ui/main.qml:268
+#: contents/ui/main.qml:320
 #, kde-format
 msgctxt "@info abbreviated hours ago, %1 is a number"
 msgid "%1h"
@@ -562,42 +569,47 @@ msgstr[1] ""
 msgid "Click to open menu for station details, website, and donation options."
 msgstr ""
 
-#: contents/ui/StationApi.qml:14
+#: contents/ui/StationApi.qml:19
 #, kde-format
 msgid "Searching for new stream..."
 msgstr ""
 
-#: contents/ui/StationApi.qml:43
+#: contents/ui/StationApi.qml:51
 #, kde-format
 msgid "Could not find a working replacement stream."
 msgstr ""
 
-#: contents/ui/StationApi.qml:44
+#: contents/ui/StationApi.qml:52
 #, kde-format
 msgid "Error parsing search results."
 msgstr ""
 
-#: contents/ui/StationApi.qml:45
+#: contents/ui/StationApi.qml:53
 #, kde-format
 msgid "Search directory is currently offline."
 msgstr ""
 
-#: contents/ui/StationApi.qml:89
+#: contents/ui/StationApi.qml:97
 #, kde-format
 msgid "Geolocation response could not be parsed."
 msgstr ""
 
-#: contents/ui/StationApi.qml:92
+#: contents/ui/StationApi.qml:100
 #, kde-format
 msgid "Geolocation service unavailable."
 msgstr ""
 
-#: src/radiobackend.cpp:403
+#: src/radiobackend.cpp:420
 #, kde-format
 msgid "Refused unsupported stream URL"
 msgstr ""
 
-#: src/radiobackend.cpp:592
+#: src/radiobackend.cpp:611
 #, kde-format
 msgid "Playing audio"
+msgstr ""
+
+#: src/radiobackend.cpp:642
+#, kde-format
+msgid "Stream unavailable after repeated reconnect attempts"
 msgstr ""
