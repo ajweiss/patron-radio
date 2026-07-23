@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Patron Radio\n"
 "Report-Msgid-Bugs-To: https://github.com/ajweiss/patron-radio/issues\n"
-"POT-Creation-Date: 2026-07-12 13:33-0400\n"
+"POT-Creation-Date: 2026-07-12 15:17-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -599,17 +599,17 @@ msgstr ""
 msgid "Geolocation service unavailable."
 msgstr ""
 
-#: src/radiobackend.cpp:420
+#: src/radiobackend.cpp:421
 #, kde-format
 msgid "Refused unsupported stream URL"
 msgstr ""
 
-#: src/radiobackend.cpp:611
+#: src/radiobackend.cpp:612
 #, kde-format
 msgid "Playing audio"
 msgstr ""
 
-#: src/radiobackend.cpp:642
+#: src/radiobackend.cpp:657
 #, kde-format
 msgid "Stream unavailable after repeated reconnect attempts"
 msgstr ""
