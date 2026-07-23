@@ -21,6 +21,14 @@ public:
     void stop();
     bool isActive() const { return m_reply != nullptr; }
 
+    // Station playout chains often HTML-escape titles somewhere between the
+    // automation system and the encoder, so "Simon & Garfunkel" arrives as
+    // "Simon &amp; Garfunkel". Decodes the handful of named entities escapers
+    // actually emit plus numeric references; anything unrecognized is left
+    // untouched. Deliberately not an HTML parser (untrusted input). Single
+    // pass. Public and static so it can be unit-tested directly.
+    static QString decodeHtmlEntities(const QString &text);
+
     qint64 readData(char *data, qint64 maxlen) override;
     qint64 writeData(const char *data, qint64 len) override;
     bool isSequential() const override;

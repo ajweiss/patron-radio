@@ -16,6 +16,92 @@ static constexpr int MAX_BUFFER = 10 * 1024 * 1024;   // 10MB cap
 static constexpr unsigned long READ_WAIT_MS = 8000;   // max blocking wait in readData() before yielding
 static constexpr qint64 MAX_METAINT = 1024 * 1024;    // sane upper bound for icy-metaint (real values are a few KB)
 
+// Decode the body of one "&...;" sequence (without the delimiters) into *out.
+// Returns false for anything unrecognized, in which case the caller keeps the
+// original text — for untrusted input, "don't recognize it, don't touch it".
+static bool decodeEntityBody(QStringView body, QString *out)
+{
+    if (!body.startsWith(QLatin1Char('#'))) {
+        // The named entities web/XML escaping functions actually emit. Exotic
+        // characters arrive as numeric references, so a full HTML5 name table
+        // buys nothing. nbsp becomes a plain space so it can't skew the
+        // panel's text-width measurements.
+        struct Named { QLatin1String name; char16_t ch; };
+        static const Named named[] = {
+            { QLatin1String("amp"),  u'&'  },
+            { QLatin1String("lt"),   u'<'  },
+            { QLatin1String("gt"),   u'>'  },
+            { QLatin1String("quot"), u'"'  },
+            { QLatin1String("apos"), u'\'' },
+            { QLatin1String("nbsp"), u' '  },
+        };
+        for (const auto &e : named) {
+            if (body == e.name) {
+                out->append(QChar(e.ch));
+                return true;
+            }
+        }
+        return false;
+    }
+
+    const bool isHex = body.size() >= 2
+        && (body.at(1) == QLatin1Char('x') || body.at(1) == QLatin1Char('X'));
+    const QStringView digits = body.mid(isHex ? 2 : 1);
+    if (digits.isEmpty())
+        return false;
+    // ASCII digits only — toUInt() alone would also accept whitespace and '+'.
+    for (const QChar c : digits) {
+        const bool okDigit = (c >= QLatin1Char('0') && c <= QLatin1Char('9'))
+            || (isHex && ((c >= QLatin1Char('a') && c <= QLatin1Char('f'))
+                       || (c >= QLatin1Char('A') && c <= QLatin1Char('F'))));
+        if (!okDigit)
+            return false;
+    }
+    bool ok = false;
+    const uint cp = digits.toUInt(&ok, isHex ? 16 : 10);
+    if (!ok)
+        return false;
+    // Printable Unicode only: no C0/C1 controls, no surrogate code points
+    // (invalid outside UTF-16 pairs), nothing beyond the Unicode range.
+    if (cp < 0x20 || cp == 0x7F || (cp >= 0x80 && cp <= 0x9F)
+        || (cp >= 0xD800 && cp <= 0xDFFF) || cp > 0x10FFFF)
+        return false;
+    // QString is UTF-16: astral-plane code points (e.g. emoji) need a
+    // surrogate pair — QChar(cp) alone would silently truncate them.
+    if (QChar::requiresSurrogates(cp)) {
+        out->append(QChar(QChar::highSurrogate(cp)));
+        out->append(QChar(QChar::lowSurrogate(cp)));
+    } else {
+        out->append(QChar(cp));
+    }
+    return true;
+}
+
+QString IcyStreamReader::decodeHtmlEntities(const QString &text)
+{
+    // Longest sequence we decode is "&#x10FFFF;"; a '&' with no ';' within
+    // that window is a literal ampersand ("Simon & Garfunkel" stays put).
+    constexpr qsizetype MAX_ENTITY_LEN = 10;
+
+    QString out;
+    out.reserve(text.size());
+    qsizetype i = 0;
+    while (i < text.size()) {
+        const QChar ch = text.at(i);
+        if (ch == QLatin1Char('&')) {
+            const qsizetype semi = text.indexOf(QLatin1Char(';'), i + 1);
+            if (semi != -1 && semi - i <= MAX_ENTITY_LEN
+                && decodeEntityBody(QStringView(text).mid(i + 1, semi - i - 1), &out)) {
+                i = semi + 1;
+                continue;
+            }
+        }
+        out.append(ch);
+        ++i;
+    }
+    return out;
+}
+
 IcyStreamReader::IcyStreamReader(QObject *parent)
     : QIODevice(parent), m_reply(nullptr), m_metaInt(0), m_audioBytesRead(0), m_metaBytesLeft(0), m_readyToPlayEmitted(false), m_readyThreshold(0), m_state(StateAudio)
 {
@@ -280,7 +366,7 @@ void IcyStreamReader::processData()
                         titleStart += 13;
                         int titleEnd = metaStr.indexOf(QStringLiteral("';"), titleStart);
                         if (titleEnd != -1) {
-                            QString title = metaStr.mid(titleStart, titleEnd - titleStart);
+                            QString title = decodeHtmlEntities(metaStr.mid(titleStart, titleEnd - titleStart));
                             if (title != m_lastTitle) {
                                 m_lastTitle = title;
                                 hasNewTitle = true;
