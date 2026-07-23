@@ -1,0 +1,38 @@
+# Maintainer: Adam Weiss <adam@signal11.com>
+pkgname=plasma6-applets-patron-radio
+pkgver=0.8
+pkgrel=1
+pkgdesc="Plasma 6 panel widget for streaming independent and public radio stations"
+arch=('x86_64' 'aarch64')
+url="https://github.com/ajweiss/patron-radio"
+license=('GPL-3.0-or-later')
+depends=(
+    'plasma-workspace'
+    'qt6-declarative'
+    'qt6-multimedia'
+    'kcoreaddons'
+    'kconfig'
+    'ki18n'
+    'kio'
+    'bluez-qt'    # runtime QML module (org.kde.bluezqt), not linked
+    'libebur128'
+)
+makedepends=('cmake' 'extra-cmake-modules')
+source=("patron-radio-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+# Regenerate with `updpkgsums` after tagging a release.
+sha256sums=('SKIP')
+
+build() {
+    cmake -B build -S "patron-radio-$pkgver" \
+        -DCMAKE_BUILD_TYPE=None \
+        -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build
+}
+
+check() {
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}
