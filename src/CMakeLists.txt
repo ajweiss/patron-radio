@@ -13,6 +13,9 @@ add_library(patronradiocore STATIC
     ${DBUS_ADAPTOR_SRCS}
 )
 
+# Linked into the shared QML plugin, so its objects must be position-independent.
+set_target_properties(patronradiocore PROPERTIES POSITION_INDEPENDENT_CODE ON)
+
 target_link_libraries(patronradiocore PUBLIC
     Qt::Core
     Qt::Multimedia
