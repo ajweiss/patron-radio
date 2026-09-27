@@ -39,6 +39,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #if DEBUG
         if CommandLine.arguments.contains("--dark") { NSApp.appearance = NSAppearance(named: .darkAqua) }
         if CommandLine.arguments.contains("--light") { NSApp.appearance = NSAppearance(named: .aqua) }
+        if let i = CommandLine.arguments.firstIndex(of: "--readme-shots"), i + 1 < CommandLine.arguments.count {
+            ReadmeShots.run(into: URL(fileURLWithPath: CommandLine.arguments[i + 1]), controller: controller, settings: settings)
+            NSApp.terminate(nil)
+            return
+        }
         if let i = CommandLine.arguments.firstIndex(of: "--snapshots"), i + 1 < CommandLine.arguments.count {
             Snapshots.run(into: URL(fileURLWithPath: CommandLine.arguments[i + 1]), controller: controller, settings: settings)
             Snapshots.capturePopover(statusItem, to: URL(fileURLWithPath: CommandLine.arguments[i + 1]).appendingPathComponent("real-popover.png"))

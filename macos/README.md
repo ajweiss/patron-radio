@@ -8,6 +8,19 @@ Station" tools. It also reads and writes the widget's station JSON format. The w
 `stationsJson` key of `~/.config/plasma-org.kde.plasma.desktop-appletsrc`, so that value can be saved to a
 `.json` file and imported here with Settings › Stations › Import. Export works the same way in the other direction.
 
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/screenshots/popover-dark.png">
+    <img src="docs/screenshots/popover-light.png" width="470"
+         alt="The Patron Radio menu bar item (station name over the scrolling track title) with its popover open: the station, current track, donate heart and stop button above the station list">
+  </picture>
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/settings-stations.png" width="400" alt="Settings: the Stations tab, listing the curated stations with expandable editors">
+  <img src="docs/screenshots/settings-behavior.png" width="400" alt="Settings: the Behavior tab, with startup, playback and audio output options">
+</p>
+
 ## Features
 
 | Plasma widget | macOS app |
@@ -71,6 +84,9 @@ The tests use Swift Testing. They cover the ICY demuxer and HTML-entity decoding
 the loudness policy and meter calibration, URL safety, reconnect backoff, station JSON compatibility,
 and the playback controller's state machine with a fake backend. Like the widget's tests, none of them touch
 the network or audio hardware.
+
+The screenshots above come from a debug-only mode that plays a real station and renders the live views. To
+refresh them, run `swift build && .build/debug/PatronRadio --readme-shots docs/screenshots` (it needs the network).
 
 Headless visual check (debug builds only): `swift run PatronRadio --snapshots /tmp/snaps` renders the popover,
 menu bar item and every settings tab to PNGs.
