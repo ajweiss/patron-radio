@@ -1,5 +1,9 @@
 # Patron Radio
 
+[![CI](https://github.com/ajweiss/patron-radio/actions/workflows/ci.yml/badge.svg)](https://github.com/ajweiss/patron-radio/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/ajweiss/patron-radio)](https://github.com/ajweiss/patron-radio/releases)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+
 Patron Radio is a native KDE Plasma 6 panel widget for streaming independent and public radio stations. It was built to scratch an itch -- there was no simple, well-integrated way to listen to internet radio directly from the Plasma panel. Rather than running a full media player for something that should be a one-click action, Patron Radio brings station streaming into the desktop as a compact quality-of-life widget.
 
 > **Cross-platform**: a native **macOS menu bar companion** is in development, sharing the widget's stations, loudness normalization and "Fix" tool.
@@ -71,6 +75,13 @@ sudo apt install qt6-declarative-dev qt6-multimedia-dev libkf6coreaddons-dev lib
 The bluez-qt package (last in each list) is not needed to compile — it provides the `org.kde.bluezqt` QML module the widget loads at runtime for Bluetooth autoplay triggers.
 
 ## Build & Installation
+
+Get the source by cloning the repository, or download a source tarball from the [releases page](https://github.com/ajweiss/patron-radio/releases):
+
+```bash
+git clone https://github.com/ajweiss/patron-radio.git
+cd patron-radio
+```
 
 You can use the provided installation script for a quick setup:
 
