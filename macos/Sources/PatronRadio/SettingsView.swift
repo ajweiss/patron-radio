@@ -234,7 +234,7 @@ private struct StationsTab: View {
             HStack {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Station List").font(.headline)
-                    Text("Drag to reorder. The list uses the same JSON format as the Plasma widget.")
+                    Text("Drag to reorder.")
                         .font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -405,7 +405,7 @@ private struct AboutTab: View {
             Text("Patron Radio").font(.title.bold())
             Text("Version \(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "dev")")
                 .foregroundStyle(.secondary)
-            Text("Independent and public radio in your menu bar — a companion to the Patron Radio KDE Plasma widget. Please support the stations you listen to.")
+            Text("Independent and public radio in your menu bar. Please support the stations you listen to.")
                 .multilineTextAlignment(.center).frame(maxWidth: 420)
             Link("github.com/ajweiss/patron-radio", destination: URL(string: "https://github.com/ajweiss/patron-radio")!)
             Divider().frame(maxWidth: 420)
