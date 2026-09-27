@@ -43,8 +43,10 @@ single process. Deliberate behavior differences are listed in `macos/README.md`.
   and status item windows. Trust the `real-*` captures: offscreen renders lack menu bar vibrancy and have hidden
   real bugs. Snapshot mode starts real playback (it needs the network), and the unbundled debug binary keeps
   its settings in a separate `PatronRadio` defaults domain (`defaults delete PatronRadio` to reset).
-- README screenshots in `macos/docs/screenshots/` are regenerated from `macos/` with `.build/debug/PatronRadio --readme-shots docs/screenshots`
-  (`ReadmeShots.swift`), after any visible UI change.
+- README screenshots in `macos/docs/screenshots/` are real screen captures, not renders. Offscreen renders
+  can't show the real menu bar or popover chrome. From a session without Screen Recording permission, run
+  `open -a Screenshot` (it needs no permission), have the user capture the entire screen, then crop.
+  Refresh them after any visible UI change.
 
 ### Menu bar and popover pitfalls (all explained in code comments)
 

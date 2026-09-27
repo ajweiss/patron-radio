@@ -105,10 +105,7 @@ After installation, add the **Patron Radio** widget to your Plasma panel or desk
 ## macOS Companion
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="macos/docs/screenshots/popover-dark.png">
-    <img src="macos/docs/screenshots/popover-light.png" width="360" alt="Patron Radio for macOS: the menu bar item with its popover open">
-  </picture>
+  <img src="macos/docs/screenshots/popover.png" width="346" alt="Patron Radio for macOS: the menu bar item with its popover open">
 </p>
 
 The [`macos/`](macos/README.md) directory holds a native menu bar app for macOS 14 and later, written in Swift. It's a port of this widget: the menu bar item mirrors the panel, the popover mirrors the popup, and the settings window has the same tabs. The plumbing maps to macOS equivalents: Now Playing and media keys instead of MPRIS, a power assertion instead of the logind inhibitor, and CoreAudio for output routing.

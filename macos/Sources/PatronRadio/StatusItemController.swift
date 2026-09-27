@@ -52,13 +52,13 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
 
     /// Width and tooltip follow state (the label itself is SwiftUI and updates itself).
     private func refresh() {
-        statusItem.length = Self.contentWidth(controller: controller, settings: settings) + Self.padding * 2
+        statusItem.length = contentWidth() + Self.padding * 2
         statusItem.button?.toolTip = controller.statusTitle + "\n" + controller.statusDetail
         statusItem.button?.setAccessibilityLabel(controller.statusTitle)
     }
 
     /// Sizing modes from the widget: fixed, auto-fit station & city, auto-fit everything.
-    static func contentWidth(controller: RadioController, settings: AppSettings) -> CGFloat {
+    private func contentWidth() -> CGFloat {
         if settings.menuBarStyle == .iconOnly { return 18 }
         func w(_ s: String, _ f: NSFont) -> CGFloat { ceil((s as NSString).size(withAttributes: [.font: f]).width) + 2 }
         switch settings.widthMode {
