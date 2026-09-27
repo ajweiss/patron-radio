@@ -1,6 +1,6 @@
 name: macOS
 
-# macOS runners are billed at a premium on private repos, so this only runs
+# Nothing outside these paths can affect the outcome, so this only runs
 # when something the macOS app builds or tests against changes: the app
 # itself, the shared test vectors, or the widget's station list (which the
 # app's default stations are generated from and checked against).
