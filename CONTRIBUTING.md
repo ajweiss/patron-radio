@@ -24,10 +24,20 @@ scripts/build-app.sh && open "dist/Patron Radio.app"
 
 ### Commits
 
-- **All commits must be signed.** Configure `git commit -S` or set `commit.gpgsign = true` in your git config.
-- Write commit messages in imperative mood: "Add sleep inhibit support", not "Added sleep inhibit support"
-- Keep the first line under 72 characters
-- Reference issue numbers where applicable: `Fix stream recovery after network loss (#42)`
+- **All commits must be signed.** The existing history is signed with an SSH key:
+  ```bash
+  git config gpg.format ssh
+  git config user.signingkey ~/.ssh/id_ed25519.pub   # or "key::ssh-ed25519 AAAA…" to sign via ssh-agent
+  git config commit.gpgsign true
+  ```
+  To verify signatures locally (`git log --show-signature`), list your key in an allowed-signers file:
+  `echo "you@example.com namespaces=\"git\" $(cat ~/.ssh/id_ed25519.pub)" >> ~/.config/git/allowed_signers`
+  and `git config gpg.ssh.allowedSignersFile ~/.config/git/allowed_signers`. GPG signing works too.
+- Subjects use a conventional-commit prefix: `fix:`, `feat:`, `docs:`, `test:`, `ci:`, `chore:`, `build:`, `refactor:`, with an optional scope such as `fix(ui):`, `feat(macos):` or `refactor(audio):`
+- Write the rest in imperative mood: "fix: stop the radio auto-resuming", not "fixed …"
+- Keep the first line under 72 characters; explain the *why* in a short body wrapped at about 72 columns
+- Reference issue numbers where applicable: `fix: recover the stream after network loss (#42)`
+- Agent-assisted commits end with an `Assisted-by: Claude:<model-id>` trailer (e.g. `Assisted-by: Claude:claude-opus-5-5`), not `Co-Authored-By`
 
 ### Branches
 
