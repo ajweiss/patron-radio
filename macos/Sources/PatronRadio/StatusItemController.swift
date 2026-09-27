@@ -163,6 +163,11 @@ struct StatusItemLabel: View {
                             .font(Font(StatusItemController.nameFont))
                             .lineLimit(1)
                             .truncationMode(.tail)
+                            // Center the glyph on the capitals, not the whole line box
+                            // (which includes descender space and reads as "too low").
+                            .alignmentGuide(VerticalAlignment.center) { d in
+                                d[.firstTextBaseline] - StatusItemController.nameFont.capHeight / 2
+                            }
                     }
                     .frame(height: 11)
                     TimelineView(.periodic(from: .now, by: 15)) { ctx in
