@@ -49,22 +49,24 @@ It can be disabled entirely from the widget's behavior settings.
 
 ## Dependencies
 
-To build and run Patron Radio, you need the following development packages:
+To build and run Patron Radio, you need the following packages:
 
 ### Fedora
 ```bash
-sudo dnf install qt6-qtdeclarative-devel qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kio-devel kf6-bluez-qt-devel libebur128-devel cmake extra-cmake-modules
+sudo dnf install qt6-qtdeclarative-devel qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kio-devel libebur128-devel cmake extra-cmake-modules kf6-bluez-qt
 ```
 
 ### Arch Linux
 ```bash
-sudo pacman -S qt6-declarative qt6-multimedia kcoreaddons kconfig ki18n kio bluez-qt libebur128 cmake extra-cmake-modules
+sudo pacman -S qt6-declarative qt6-multimedia kcoreaddons kconfig ki18n kio libebur128 cmake extra-cmake-modules bluez-qt
 ```
 
 ### Ubuntu / KDE Neon
 ```bash
-sudo apt install qt6-declarative-dev qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6kio-dev libkf6bluezqt-dev libebur128-dev cmake extra-cmake-modules
+sudo apt install qt6-declarative-dev qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6kio-dev libebur128-dev cmake extra-cmake-modules qml6-module-org-kde-bluezqt
 ```
+
+The bluez-qt package (last in each list) is not needed to compile — it provides the `org.kde.bluezqt` QML module the widget loads at runtime for Bluetooth autoplay triggers.
 
 ## Build & Installation
 
