@@ -1,5 +1,10 @@
 # Patron Radio
 
+[![CI](https://github.com/ajweiss/patron-radio/actions/workflows/ci.yml/badge.svg)](https://github.com/ajweiss/patron-radio/actions/workflows/ci.yml)
+[![macOS](https://github.com/ajweiss/patron-radio/actions/workflows/macos.yml/badge.svg)](https://github.com/ajweiss/patron-radio/actions/workflows/macos.yml)
+[![Release](https://img.shields.io/github/v/release/ajweiss/patron-radio)](https://github.com/ajweiss/patron-radio/releases)
+[![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
+
 Patron Radio streams independent and public radio right from your desktop, as a native **KDE Plasma 6 panel widget** on Linux and a native **menu bar app on macOS**. It was built to scratch an itch -- there was no simple, well-integrated way to listen to internet radio directly from the Plasma panel. Rather than running a full media player for something that should be a one-click action, Patron Radio brings station streaming into the desktop as a compact quality-of-life widget.
 
 <table align="center">
@@ -60,24 +65,33 @@ It can be disabled entirely from the widget's behavior settings.
 
 ## Dependencies
 
-To build and run Patron Radio, you need the following development packages:
+To build and run Patron Radio, you need the following packages:
 
 ### Fedora
 ```bash
-sudo dnf install qt6-qtdeclarative-devel qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kio-devel kf6-bluez-qt-devel libebur128-devel cmake extra-cmake-modules
+sudo dnf install qt6-qtdeclarative-devel qt6-qtmultimedia-devel kf6-kcoreaddons-devel kf6-kconfig-devel kf6-ki18n-devel kf6-kio-devel libebur128-devel cmake extra-cmake-modules kf6-bluez-qt
 ```
 
 ### Arch Linux
 ```bash
-sudo pacman -S qt6-declarative qt6-multimedia kcoreaddons kconfig ki18n kio bluez-qt libebur128 cmake extra-cmake-modules
+sudo pacman -S qt6-declarative qt6-multimedia kcoreaddons kconfig ki18n kio libebur128 cmake extra-cmake-modules bluez-qt
 ```
 
 ### Ubuntu / KDE Neon
 ```bash
-sudo apt install qt6-declarative-dev qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6kio-dev libkf6bluezqt-dev libebur128-dev cmake extra-cmake-modules
+sudo apt install qt6-declarative-dev qt6-multimedia-dev libkf6coreaddons-dev libkf6config-dev libkf6i18n-dev libkf6kio-dev libebur128-dev cmake extra-cmake-modules qml6-module-org-kde-bluezqt
 ```
 
+The bluez-qt package (last in each list) is not needed to compile — it provides the `org.kde.bluezqt` QML module the widget loads at runtime for Bluetooth autoplay triggers.
+
 ## Build & Installation
+
+Get the source by cloning the repository, or download a source tarball from the [releases page](https://github.com/ajweiss/patron-radio/releases):
+
+```bash
+git clone https://github.com/ajweiss/patron-radio.git
+cd patron-radio
+```
 
 You can use the provided installation script for a quick setup:
 
