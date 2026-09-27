@@ -2,7 +2,16 @@
 
 Patron Radio streams independent and public radio right from your desktop, as a native **KDE Plasma 6 panel widget** on Linux and a native **menu bar app on macOS**. It was built to scratch an itch -- there was no simple, well-integrated way to listen to internet radio directly from the Plasma panel. Rather than running a full media player for something that should be a one-click action, Patron Radio brings station streaming into the desktop as a compact quality-of-life widget.
 
-![Patron Radio](screenshot.png)
+<table align="center">
+  <tr>
+    <td align="center"><img src="screenshot.png" height="440" alt="Patron Radio on KDE Plasma: the panel widget's popup playing New Sounds (WNYC)"></td>
+    <td align="center"><img src="macos/docs/screenshots/popover.png" height="440" alt="Patron Radio on macOS: the menu bar item with its popover open, playing New Sounds (WNYC)"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>KDE Plasma</b></td>
+    <td align="center"><b>macOS</b></td>
+  </tr>
+</table>
 
 The macOS app lives in [`macos/`](macos/README.md) and shares the widget's stations, loudness normalization and "Fix" tool. See [macOS Companion](#macos-companion) below.
 
@@ -103,10 +112,6 @@ If you prefer to build manually:
 After installation, add the **Patron Radio** widget to your Plasma panel or desktop via the standard "Add Widgets" menu.
 
 ## macOS Companion
-
-<p align="center">
-  <img src="macos/docs/screenshots/popover.png" width="346" alt="Patron Radio for macOS: the menu bar item with its popover open">
-</p>
 
 The [`macos/`](macos/README.md) directory holds a native menu bar app for macOS 14 and later, written in Swift. It's a port of this widget: the menu bar item mirrors the panel, the popover mirrors the popup, and the settings window has the same tabs. The plumbing maps to macOS equivalents: Now Playing and media keys instead of MPRIS, a power assertion instead of the logind inhibitor, and CoreAudio for output routing.
 
