@@ -20,7 +20,7 @@ depends=(
 makedepends=('cmake' 'extra-cmake-modules')
 source=("patron-radio-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
 # Regenerate with `updpkgsums` after tagging a release.
-sha256sums=('SKIP')
+sha256sums=('203385ff4131c3922dc9996b1f849959a959e21be93a2c661e1e3a4e0d418c73')
 
 build() {
     cmake -B build -S "patron-radio-$pkgver" \
