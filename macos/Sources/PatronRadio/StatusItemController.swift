@@ -7,9 +7,6 @@ import SwiftUI
 /// middle click toggles playback (as on the Plasma panel).
 @MainActor
 final class StatusItemController: NSObject, NSPopoverDelegate {
-    static let nameFont = NSFont.systemFont(ofSize: 9.5, weight: .bold)
-    static let subtitleFont = NSFont.systemFont(ofSize: 8.5)
-    static let glyphWidth: CGFloat = 11
     static let padding: CGFloat = 4
 
     private let controller: RadioController
@@ -17,7 +14,7 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
     private let openSettings: () -> Void
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let popover = NSPopover()
-    private var hostingView: NSHostingView<StatusItemLabel>?
+    private let label = StatusLabelView()
 
     init(controller: RadioController, settings: AppSettings, openSettings: @escaping () -> Void) {
         self.controller = controller
@@ -33,25 +30,21 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
             button.target = self
             button.action = #selector(clicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp, .otherMouseUp])
-            let host = PassthroughHostingView(rootView: StatusItemLabel(controller: controller, settings: settings))
-            // The item width is set explicitly (statusItem.length); the label must not
-            // push it wider through its intrinsic size (e.g. a long stream title).
-            host.sizingOptions = []
-            host.translatesAutoresizingMaskIntoConstraints = false
-            button.addSubview(host)
+            label.translatesAutoresizingMaskIntoConstraints = false
+            button.addSubview(label)
             NSLayoutConstraint.activate([
-                host.leadingAnchor.constraint(equalTo: button.leadingAnchor, constant: Self.padding),
-                host.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -Self.padding),
-                host.topAnchor.constraint(equalTo: button.topAnchor),
-                host.bottomAnchor.constraint(equalTo: button.bottomAnchor),
+                label.leadingAnchor.constraint(equalTo: button.leadingAnchor, constant: Self.padding),
+                label.trailingAnchor.constraint(equalTo: button.trailingAnchor, constant: -Self.padding),
+                label.topAnchor.constraint(equalTo: button.topAnchor),
+                label.bottomAnchor.constraint(equalTo: button.bottomAnchor),
             ])
-            hostingView = host
         }
         observeContinuously { [weak self] in self?.refresh() }
     }
 
-    /// Width and tooltip follow state (the label itself is SwiftUI and updates itself).
+    /// Label content, width and tooltip follow state.
     private func refresh() {
+        label.content = labelContent()
         statusItem.length = contentWidth() + Self.padding * 2
         statusItem.button?.toolTip = controller.statusTitle + "\n" + controller.statusDetail
         statusItem.button?.setAccessibilityLabel(controller.statusTitle)
@@ -65,13 +58,34 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         case .fixed:
             return CGFloat(settings.fixedWidth)
         case .autoStationCity, .autoEverything:
-            var fit = max(36, Self.glyphWidth + w(controller.currentStationName, Self.nameFont),
-                          w(controller.currentStationCity, Self.subtitleFont))
+            var fit = max(36, StatusLabelView.glyphWidth + w(controller.currentStationName, StatusLabelView.nameFont),
+                          w(controller.currentStationCity, StatusLabelView.subtitleFont))
             if settings.widthMode == .autoEverything && settings.subtitleMode != .city {
-                fit = max(fit, w(controller.currentTrack, Self.subtitleFont))
+                fit = max(fit, w(controller.currentTrack, StatusLabelView.subtitleFont))
             }
             return min(fit, 420)
         }
+    }
+
+    private func labelContent() -> StatusLabelView.Content {
+        var c = StatusLabelView.Content()
+        let state = controller.playbackState
+        c.iconOnly = settings.menuBarStyle == .iconOnly || controller.stations.isEmpty
+        switch state {
+        case .broken: c.symbol = "exclamationmark.triangle"; c.glyph = "exclamationmark.triangle.fill"
+        case .buffering, .fixing, .locating: c.symbol = "antenna.radiowaves.left.and.right"; c.glyph = "arrow.triangle.2.circlepath"
+        case .playing: c.symbol = "radio.fill"; c.glyph = "play.fill"
+        case .stopped: c.symbol = "radio"; c.glyph = "stop.fill"
+        }
+        c.name = controller.currentStationName
+        let city = controller.currentStationCity
+        let track = controller.currentTrack.isEmpty ? city : controller.currentTrack
+        switch settings.subtitleMode {
+        case .city: c.subtitles = [city]
+        case .track: c.subtitles = [track]
+        case .alternate: c.subtitles = track == city ? [city] : [city, track]
+        }
+        return c
     }
 
     @objc private func clicked(_ sender: NSStatusBarButton) {
@@ -132,80 +146,5 @@ final class StatusItemController: NSObject, NSPopoverDelegate {
         statusItem.menu = menu
         statusItem.button?.performClick(nil)
         statusItem.menu = nil
-    }
-}
-
-/// Lets clicks fall through the SwiftUI label to the status bar button.
-private final class PassthroughHostingView<Content: View>: NSHostingView<Content> {
-    override func hitTest(_ point: NSPoint) -> NSView? { nil }
-}
-
-/// Two tiny lines, like the Plasma panel: a state glyph + station name in bold,
-/// then the city / stream title (crawling when it doesn't fit).
-struct StatusItemLabel: View {
-    let controller: RadioController
-    let settings: AppSettings
-
-    var body: some View {
-        Group {
-            if settings.menuBarStyle == .iconOnly || controller.stations.isEmpty {
-                Image(systemName: iconName)
-                    .font(.system(size: 14, weight: .medium))
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                // Two fixed-height lines (11 + 10 pt) so both fit a 22 pt menu bar.
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 2) {
-                        Image(systemName: glyphName)
-                            .font(.system(size: 7, weight: .heavy))
-                            .frame(width: StatusItemController.glyphWidth - 2)
-                        Text(controller.currentStationName)
-                            .font(Font(StatusItemController.nameFont))
-                            .lineLimit(1)
-                            .truncationMode(.tail)
-                            // Center the glyph on the capitals, not the whole line box
-                            // (which includes descender space and reads as "too low").
-                            .alignmentGuide(VerticalAlignment.center) { d in
-                                d[.firstTextBaseline] - StatusItemController.nameFont.capHeight / 2
-                            }
-                    }
-                    .frame(height: 11)
-                    TimelineView(.periodic(from: .now, by: 15)) { ctx in
-                        Marquee(text: subtitle(at: ctx.date), font: StatusItemController.subtitleFont,
-                                color: Color(nsColor: .labelColor).opacity(0.75))
-                    }
-                    .frame(height: 10)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    private var glyphName: String {
-        switch controller.playbackState {
-        case .broken: return "exclamationmark.triangle.fill"
-        case .buffering, .fixing, .locating: return "arrow.triangle.2.circlepath"
-        case .playing: return "play.fill"
-        case .stopped: return "stop.fill"
-        }
-    }
-
-    private var iconName: String {
-        switch controller.playbackState {
-        case .broken: return "exclamationmark.triangle"
-        case .buffering, .fixing, .locating: return "antenna.radiowaves.left.and.right"
-        case .playing: return "radio.fill"
-        case .stopped: return "radio"
-        }
-    }
-
-    private func subtitle(at date: Date) -> String {
-        let city = controller.currentStationCity
-        let track = controller.currentTrack.isEmpty ? city : controller.currentTrack
-        switch settings.subtitleMode {
-        case .city: return city
-        case .track: return track
-        case .alternate: return Int(date.timeIntervalSinceReferenceDate / 15) % 2 == 0 ? city : track
-        }
     }
 }

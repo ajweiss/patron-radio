@@ -52,9 +52,11 @@ single process. Deliberate behavior differences are listed in `macos/README.md`.
 
 - Don't use hierarchical styles (`.secondary`, `.opacity` on text) inside clipped layers on the menu bar or
   popover. Vibrancy blending makes the text vanish. Pass concrete colors, as `Marquee` does.
-- The status item is about 21 pt tall: two lines of 11 + 10 pt, no more.
-- The status item's width comes only from `statusItem.length`. The hosting view has `sizingOptions = []`,
-  and `Marquee` reports zero ideal width, so long titles scroll instead of widening the item.
+- The status item is 21–22 pt tall. Its two-line label is drawn by an AppKit view (`StatusLabelView`), not
+  SwiftUI, so baselines, the state glyph and the scroll offset land on whole pixels. SwiftUI placed those tiny
+  fonts at fractional baselines, which looked blurry on 1x displays. Keep its font sizes whole points.
+- The status item's width comes only from `statusItem.length`, and long titles scroll inside it.
+  In SwiftUI (the popover), `Marquee` reports zero ideal width for the same reason.
 - Give the popover its fixed size before `show`, and keep `sizingOptions = []` on its hosting controller.
   Letting SwiftUI resize it after showing re-anchors it off the top of the screen.
 - The app's settings type is `AppSettings`, because `Settings` collides with SwiftUI's scene type.

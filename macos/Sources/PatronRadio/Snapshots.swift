@@ -3,8 +3,9 @@ import AppKit
 import PatronRadioCore
 import SwiftUI
 
-/// Debug aid: `PatronRadio --snapshots <dir>` renders the popover, menu bar
-/// label and settings tabs to PNGs (useful on headless build machines).
+/// Debug aid: `PatronRadio --snapshots <dir>` renders the popover and settings
+/// tabs to PNGs, and captures the real status item and popover windows
+/// (useful on headless build machines).
 @MainActor
 enum Snapshots {
     static func run(into dir: URL, controller: RadioController, settings: AppSettings) {
@@ -19,10 +20,6 @@ enum Snapshots {
             let suffix = appearance == .aqua ? "light" : "dark"
             render(PopoverView(controller: controller, openSettings: {}, close: {}),
                    size: CGSize(width: 340, height: 480), appearance: appearance, to: dir.appendingPathComponent("popover-\(suffix).png"))
-            render(StatusItemLabel(controller: controller, settings: settings).padding(.horizontal, 4)
-                    .frame(width: 150, height: 24).background(Color(nsColor: .windowBackgroundColor)),
-                   size: CGSize(width: 150, height: 24), appearance: appearance, scale: 3,
-                   to: dir.appendingPathComponent("menubar-\(suffix).png"))
         }
         for (i, name) in ["behavior", "loudness", "appearance", "stations", "about"].enumerated() {
             render(SettingsView(controller: controller, settings: settings, tab: i),

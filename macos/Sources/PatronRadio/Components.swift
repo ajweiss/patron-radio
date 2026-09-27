@@ -63,7 +63,7 @@ struct Marquee: View {
                 label
             } else {
                 TimelineView(.animation(minimumInterval: 1.0 / 30)) { ctx in
-                    label.offset(x: -offset(at: ctx.date.timeIntervalSince(startedAt), distance: overflow + 4))
+                    label.offset(x: -Marquee.offset(at: ctx.date.timeIntervalSince(startedAt), distance: overflow + 4))
                 }
             }
         }
@@ -88,7 +88,8 @@ struct Marquee: View {
             .fixedSize()
     }
 
-    private func offset(at t: TimeInterval, distance: CGFloat) -> CGFloat {
+    /// Scroll position `t` seconds into the cycle (shared with the menu bar label).
+    static func offset(at t: TimeInterval, distance: CGFloat) -> CGFloat {
         let pause = 2.0, back = 0.6
         let scroll = max(1.5, Double(distance) * 0.02)
         let cycle = pause + scroll + pause + back
