@@ -32,3 +32,21 @@ jobs:
       - name: Test
         # A session bus keeps the MPRIS registration paths realistic.
         run: dbus-run-session -- ctest --test-dir build --output-on-failure
+
+  macos:
+    # The menu bar companion in macos/ (Swift 6 package, macOS 14+).
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: macos
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        # Reads the shared vectors in tests/data/ and contents/config/main.xml,
+        # so the whole repo must be checked out (it is).
+        run: swift test
