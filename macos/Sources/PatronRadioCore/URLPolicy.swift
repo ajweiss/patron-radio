@@ -18,14 +18,21 @@ public enum URLPolicy {
         guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https" else { return true }
         guard var host = url.host, !host.isEmpty else { return true }
         if host.hasPrefix("[") && host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
+        // A zone id (fe80::1%en0) means a scoped, non-global address; it also
+        // makes inet_pton fail, so without this it would pass as a "hostname".
+        if host.contains("%") { return true }
         if let v4 = parseIPv4(host) { return !isGlobalIPv4(v4) }
         if let v6 = parseIPv6(host) { return !isGlobalIPv6(v6) }
         return false
     }
 
     static func parseIPv4(_ s: String) -> [UInt8]? {
+        // inet_aton, not inet_pton: getaddrinfo also resolves the legacy
+        // single-integer, hex, octal and short forms ("127.1", "0x7f000001",
+        // "2130706433"), so the guard must classify those as addresses too,
+        // the way QUrl/QHostAddress normalization does for the widget.
         var addr = in_addr()
-        guard inet_pton(AF_INET, s, &addr) == 1 else { return nil }
+        guard inet_aton(s, &addr) == 1 else { return nil }
         return withUnsafeBytes(of: addr.s_addr) { Array($0) }
     }
 
@@ -58,6 +65,7 @@ public enum URLPolicy {
         }
         if b[0] & 0xfe == 0xfc { return false }                                          // fc00::/7 ULA
         if b[0] == 0xfe && b[1] & 0xc0 == 0x80 { return false }                          // fe80::/10
+        if b[0] == 0xfe && b[1] & 0xc0 == 0xc0 { return false }                          // fec0::/10 site-local (deprecated)
         if b[0] == 0xff { return false }                                                 // multicast
         if b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x0d && b[3] == 0xb8 { return false } // documentation
         return true

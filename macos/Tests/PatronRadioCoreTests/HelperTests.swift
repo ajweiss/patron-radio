@@ -18,6 +18,12 @@ struct URLPolicyTests {
         "http://169.254.169.254/latest/meta-data", "http://100.64.1.1/", "http://0.0.0.0/",
         "http://224.0.0.1/", "http://[::1]/", "http://[fe80::1]/", "http://[fd00::1]/",
         "http://[::ffff:127.0.0.1]/", "ftp://radio.example.com/", "file:///tmp/x.mp3",
+        // Legacy IPv4 literal forms getaddrinfo resolves: short, hex, octal,
+        // single integer ("127.1" is 127.0.0.1; the octal quad is 169.254.169.254).
+        "http://127.1/", "http://0x7f000001/", "http://2130706433/",
+        "http://0251.0376.0251.0376/",
+        // Scoped (zone id) and deprecated site-local IPv6.
+        "http://[fe80::1%25en0]/", "http://[fec0::1]/",
     ])
     func blocksNonRoutableAndNonHTTP(_ s: String) {
         #expect(URLPolicy.isDisallowedStreamURL(URL(string: s)!))
