@@ -1,0 +1,59 @@
+{
+  "description": "Loudness normalization gain in dB for a measured integrated loudness (LUFS) and target: attenuation only, clamped to -24 dB.",
+  "cases": [
+    {
+      "name": "louder than target attenuates by the difference",
+      "measured": -12.0,
+      "target": -18.0,
+      "gain": -6.0
+    },
+    {
+      "name": "louder than target, larger gap",
+      "measured": -8.0,
+      "target": -18.0,
+      "gain": -10.0
+    },
+    {
+      "name": "at target: no change",
+      "measured": -18.0,
+      "target": -18.0,
+      "gain": 0.0
+    },
+    {
+      "name": "quieter than target: never boost",
+      "measured": -24.0,
+      "target": -18.0,
+      "gain": 0.0
+    },
+    {
+      "name": "much quieter: never boost",
+      "measured": -40.0,
+      "target": -18.0,
+      "gain": 0.0
+    },
+    {
+      "name": "very loud",
+      "measured": 0.0,
+      "target": -18.0,
+      "gain": -18.0
+    },
+    {
+      "name": "clamped to 24 dB maximum attenuation",
+      "measured": 12.0,
+      "target": -18.0,
+      "gain": -24.0
+    },
+    {
+      "name": "default target (-23 LUFS), typical station",
+      "measured": -14.7,
+      "target": -23.0,
+      "gain": -8.3
+    },
+    {
+      "name": "default target, unmeasured-station assumption (-16 LUFS)",
+      "measured": -16.0,
+      "target": -23.0,
+      "gain": -7.0
+    }
+  ]
+}

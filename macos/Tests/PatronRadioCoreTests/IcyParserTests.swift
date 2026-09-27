@@ -87,46 +87,15 @@ struct IcyDemuxerTests {
     }
 }
 
-/// Same cases as the widget's tests/test_icystream.cpp.
+/// Cases shared with the widget's test_icystream (tests/data/html_entities.json).
 struct HTMLEntityTests {
-    let decode = IcyDemuxer.decodeHTMLEntities
-
-    @Test func namedEntities() {
-        #expect(decode("Simon &amp; Garfunkel") == "Simon & Garfunkel")
-        #expect(decode("&lt;3 Deluxe &gt;&gt;") == "<3 Deluxe >>")
-        #expect(decode("&quot;Heroes&quot;") == "\"Heroes\"")
-        #expect(decode("Guns N&apos; Roses") == "Guns N' Roses")
-        #expect(decode("A&nbsp;B") == "A B")
+    @Test func sharedVectorsLoaded() {
+        #expect(SharedVectors.htmlEntities.count >= 20)
     }
 
-    @Test func numericEntities() {
-        #expect(decode("Don&#39;t Stop") == "Don't Stop")
-        #expect(decode("It&#8217;s Oh So Quiet") == "It\u{2019}s Oh So Quiet")
-        #expect(decode("It&#x2019;s") == "It\u{2019}s")
-        #expect(decode("Party &#128512;") == "Party 😀")
-    }
-
-    @Test func leavesLiteralsAlone() {
-        #expect(decode("AC & DC") == "AC & DC")
-        #expect(decode("Mumford & Sons; Live") == "Mumford & Sons; Live")
-        #expect(decode("Rock &") == "Rock &")
-        #expect(decode("&foo;") == "&foo;")
-        #expect(decode("&#;") == "&#;")
-        #expect(decode("&#x;") == "&#x;")
-        #expect(decode("&# 39;") == "&# 39;")
-        #expect(decode("") == "")
-    }
-
-    @Test func rejectsUnsafeCodePoints() {
-        #expect(decode("&#0;") == "&#0;")
-        #expect(decode("&#31;") == "&#31;")
-        #expect(decode("&#x9F;") == "&#x9F;")
-        #expect(decode("&#xD800;") == "&#xD800;")
-        #expect(decode("&#1114112;") == "&#1114112;")
-    }
-
-    @Test func isSinglePass() {
-        #expect(decode("Me &amp;amp; You") == "Me &amp; You")
+    @Test(arguments: SharedVectors.htmlEntities)
+    func decodes(_ c: SharedVectors.EntityCase) {
+        #expect(IcyDemuxer.decodeHTMLEntities(c.input) == c.expected)
     }
 }
 

@@ -67,8 +67,8 @@ For development, `swift run PatronRadio` works too, or open `Package.swift` in X
 swift test
 ```
 
-The tests use Swift Testing. They cover the ICY demuxer and HTML-entity decoding (including the widget's own
-cases), the loudness policy and meter calibration, URL safety, reconnect backoff, station JSON compatibility,
+The tests use Swift Testing. They cover the ICY demuxer and HTML-entity decoding (from the shared vectors),
+the loudness policy and meter calibration, URL safety, reconnect backoff, station JSON compatibility,
 and the playback controller's state machine with a fake backend. Like the widget's tests, none of them touch
 the network or audio hardware.
 
@@ -92,7 +92,10 @@ Tests/PatronRadioCoreTests/
 ```
 
 `DefaultStations.swift` is generated from the widget's `../contents/config/main.xml`, which stays the single
-source of truth. After changing that list, run `scripts/sync-stations.sh`.
+source of truth. After changing that list, run `scripts/sync-stations.sh`; a test fails if the two drift apart.
+
+Rules both apps must agree on (HTML entity decoding in stream titles, the loudness gain policy) are written
+once as test vectors in [`../tests/data/`](../tests/data/README.md) and loaded by both test suites.
 
 ## Privacy
 

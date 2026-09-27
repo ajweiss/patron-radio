@@ -12,6 +12,18 @@ struct StationTests {
         #expect(s.first { $0.name == "KCRW" }?.kind == .mixed)
     }
 
+    /// contents/config/main.xml is the source of truth; DefaultStations.swift is
+    /// generated from it by scripts/sync-stations.sh. Fails if they drift apart.
+    @Test func defaultListMatchesTheWidgetConfigSchema() throws {
+        let xmlURL = SharedVectors.repoRoot.appendingPathComponent("contents/config/main.xml")
+        let xml = try String(contentsOf: xmlURL, encoding: .utf8)
+        let open = try #require(xml.range(of: #"<entry name="stationsJson" type="String">\s*<default>"#,
+                                          options: .regularExpression))
+        let close = try #require(xml.range(of: "</default>", range: open.upperBound..<xml.endIndex))
+        let widget = try #require(Station.decodeList(String(xml[open.upperBound..<close.lowerBound])))
+        #expect(widget == Station.defaults, "Run macos/scripts/sync-stations.sh to regenerate DefaultStations.swift")
+    }
+
     @Test func roundTripsThroughWidgetJSON() {
         let original = Station.defaults
         let json = Station.encodeList(original)

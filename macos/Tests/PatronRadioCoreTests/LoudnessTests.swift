@@ -3,16 +3,14 @@ import Testing
 @testable import PatronRadioCore
 
 struct LoudnessPolicyTests {
-    // Same expectations as the widget's testLoudnessGain / testManualGainRoundTrip.
-    @Test func attenuatesOnlyAndClamps() {
-        let target = -18.0
-        #expect(Loudness.attenuationGainDB(measured: -12, target: target) == -6)
-        #expect(Loudness.attenuationGainDB(measured: -8, target: target) == -10)
-        #expect(Loudness.attenuationGainDB(measured: target, target: target) == 0)
-        #expect(Loudness.attenuationGainDB(measured: -24, target: target) == 0)
-        #expect(Loudness.attenuationGainDB(measured: -40, target: target) == 0)
-        #expect(Loudness.attenuationGainDB(measured: 0, target: target) == -18)
-        #expect(Loudness.attenuationGainDB(measured: 12, target: target) == -24)
+    // Cases shared with the widget's test_radiobackend (tests/data/loudness_gain.json).
+    @Test func sharedVectorsLoaded() {
+        #expect(SharedVectors.loudnessGain.count >= 7)
+    }
+
+    @Test(arguments: SharedVectors.loudnessGain)
+    func attenuatesOnlyAndClamps(_ c: SharedVectors.GainCase) {
+        #expect(abs(Loudness.attenuationGainDB(measured: c.measured, target: c.target) - c.gain) < 1e-9)
     }
 
     @Test func manualGainRoundTrips() {

@@ -1,0 +1,120 @@
+{
+  "description": "Stream-title HTML entity decoding. Named entities escapers emit plus numeric references; anything unrecognized or unsafe stays literal; one pass only.",
+  "cases": [
+    {
+      "name": "named: amp",
+      "input": "Simon &amp; Garfunkel",
+      "expected": "Simon & Garfunkel"
+    },
+    {
+      "name": "named: lt and gt",
+      "input": "&lt;3 Deluxe &gt;&gt;",
+      "expected": "<3 Deluxe >>"
+    },
+    {
+      "name": "named: quot",
+      "input": "&quot;Heroes&quot;",
+      "expected": "\"Heroes\""
+    },
+    {
+      "name": "named: apos",
+      "input": "Guns N&apos; Roses",
+      "expected": "Guns N' Roses"
+    },
+    {
+      "name": "named: nbsp becomes a plain space",
+      "input": "A&nbsp;B",
+      "expected": "A B"
+    },
+    {
+      "name": "numeric: decimal ASCII",
+      "input": "Don&#39;t Stop",
+      "expected": "Don't Stop"
+    },
+    {
+      "name": "numeric: decimal curly apostrophe",
+      "input": "It&#8217;s Oh So Quiet",
+      "expected": "It’s Oh So Quiet"
+    },
+    {
+      "name": "numeric: hex curly apostrophe",
+      "input": "It&#x2019;s",
+      "expected": "It’s"
+    },
+    {
+      "name": "numeric: astral plane (surrogate pair)",
+      "input": "Party &#128512;",
+      "expected": "Party 😀"
+    },
+    {
+      "name": "literal: plain ampersand",
+      "input": "AC & DC",
+      "expected": "AC & DC"
+    },
+    {
+      "name": "literal: distant semicolon",
+      "input": "Mumford & Sons; Live",
+      "expected": "Mumford & Sons; Live"
+    },
+    {
+      "name": "literal: trailing ampersand",
+      "input": "Rock &",
+      "expected": "Rock &"
+    },
+    {
+      "name": "literal: unknown name",
+      "input": "&foo;",
+      "expected": "&foo;"
+    },
+    {
+      "name": "literal: empty numeric",
+      "input": "&#;",
+      "expected": "&#;"
+    },
+    {
+      "name": "literal: empty hex",
+      "input": "&#x;",
+      "expected": "&#x;"
+    },
+    {
+      "name": "literal: space in digits",
+      "input": "&# 39;",
+      "expected": "&# 39;"
+    },
+    {
+      "name": "literal: empty string",
+      "input": "",
+      "expected": ""
+    },
+    {
+      "name": "unsafe: NUL",
+      "input": "&#0;",
+      "expected": "&#0;"
+    },
+    {
+      "name": "unsafe: C0 control",
+      "input": "&#31;",
+      "expected": "&#31;"
+    },
+    {
+      "name": "unsafe: C1 control",
+      "input": "&#x9F;",
+      "expected": "&#x9F;"
+    },
+    {
+      "name": "unsafe: lone surrogate",
+      "input": "&#xD800;",
+      "expected": "&#xD800;"
+    },
+    {
+      "name": "unsafe: beyond U+10FFFF",
+      "input": "&#1114112;",
+      "expected": "&#1114112;"
+    },
+    {
+      "name": "single pass: double escape decodes one level",
+      "input": "Me &amp;amp; You",
+      "expected": "Me &amp; You"
+    }
+  ]
+}
