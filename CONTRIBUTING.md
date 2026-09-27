@@ -13,6 +13,13 @@
    ```
 4. Add the widget to your panel and test manually
 
+Working on the macOS app instead? It needs macOS 14+ and Xcode 16+:
+```bash
+cd macos
+swift test
+scripts/build-app.sh && open "dist/Patron Radio.app"
+```
+
 ## Git Workflow
 
 ### Commits
@@ -76,11 +83,23 @@
 - **Component sizing**: Keep QML files focused. If a file exceeds ~200 lines, consider extracting a sub-component.
 - **Imports**: Only import what you use. Group standard Qt imports, then KDE imports, then local imports.
 
+### Swift (macos/)
+
+- **Toolchain**: Swift 6 package (tools 6.0) compiled in Swift 5 language mode, targeting macOS 14
+- **Indentation**: 4 spaces, no tabs; opening brace on the same line
+- **Naming**: Swift API guidelines — types `PascalCase`, everything else `camelCase`
+- **Layout**: logic goes in `PatronRadioCore` (no AppKit or SwiftUI there), UI goes in `PatronRadio`
+- **State**: `@Observable` models on the main actor; the audio pipeline (`StreamSession`) runs on its own serial queue and reports back to the main queue
+- **Logging**: `NSLog("patron-radio: …")`, the same prefix as the widget
+- **Ports**: when porting a widget change, keep the behavior and the comments explaining it in sync, and say in the commit which side it came from
+
 ### Config Schema (contents/config/main.xml)
 
 - Every config entry must have a `<default>` value
 - Remove config entries that are no longer referenced — don't leave dead keys
 - JSON stored in string config entries should be valid when empty: use `[]` or `{}` as defaults
+- The macOS app mirrors these keys in `macos/Sources/PatronRadioCore/AppSettings.swift`. Add or rename them there too
+- The default station list is also the macOS app's: after editing it, run `macos/scripts/sync-stations.sh` (a macOS test fails if they drift)
 
 ## Testing
 
@@ -90,6 +109,8 @@
 cd build
 ctest --output-on-failure
 ```
+
+The macOS app's tests run with `cd macos && swift test`.
 
 Or run a specific test with verbose output:
 ```bash
@@ -115,6 +136,10 @@ Or run a specific test with verbose output:
   3. Interaction with stop/pause
   4. Destruction while the feature is active
 
+### Shared Test Vectors
+
+Rules that both the widget and the macOS app implement (HTML entity decoding in stream titles, the loudness gain policy) are written once as JSON in `tests/data/` and loaded by both test suites. When you change such a rule, change the vectors, then make both sides pass. When you add a rule that both apps implement, add a vector file rather than hard-coding the cases in one suite. See [tests/data/README.md](tests/data/README.md).
+
 ### Manual Testing Checklist
 
 Before submitting a PR that touches playback or routing:
@@ -127,6 +152,14 @@ Before submitting a PR that touches playback or routing:
 - [ ] Connect/disconnect a Bluetooth audio device while playing
 - [ ] Verify `systemd-inhibit --list` shows the lock while playing (if inhibit is enabled)
 - [ ] Open widget settings, change options, verify no crash on apply
+
+macOS app, before submitting a PR that touches playback or routing:
+
+- [ ] Play from the popover and verify the stream title in both the popover and the menu bar
+- [ ] Switch stations rapidly; use the play/pause and next/previous media keys
+- [ ] Unplug headphones (or disconnect AirPods) while playing and verify it pauses rather than switching to the speakers
+- [ ] Disconnect the network and verify it reconnects after restoring
+- [ ] Verify `pmset -g assertions` lists Patron Radio while playing (if sleep prevention is on)
 
 ## Architecture Notes
 
@@ -145,6 +178,7 @@ Key design decisions:
 - New logic should go in the appropriate extracted sub-component (`AudioRouter.qml`, `StationApi.qml`, `ContextActions.qml`), not back into `main.qml`.
 - Reconnect logic lives in `RadioBackend` (C++), not QML.
 - Tests must not depend on network access or real audio hardware.
+- The macOS app follows the same constraints: one `PlaybackState` in `RadioController` (no independent flags), reconnect logic in `RadioBackend`, and `DefaultStations.swift` is generated. Never edit it by hand.
 
 ### Things to Avoid
 
