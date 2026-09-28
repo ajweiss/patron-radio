@@ -37,7 +37,7 @@ scripts/build-app.sh && open "dist/Patron Radio.app"
 - Write the rest in imperative mood: "fix: stop the radio auto-resuming", not "fixed …"
 - Keep the first line under 72 characters; explain the *why* in a short body wrapped at about 72 columns
 - Reference issue numbers where applicable: `fix: recover the stream after network loss (#42)`
-- Agent-assisted commits end with an `Assisted-by: Claude:<model-id>` trailer (e.g. `Assisted-by: Claude:claude-opus-5-5`), not `Co-Authored-By`
+- Agent-assisted commits end with an `Assisted-by: Claude:<model-id>` trailer (e.g. `Assisted-by: Claude:claude-opus-5`), not `Co-Authored-By`
 
 ### Branches
 
