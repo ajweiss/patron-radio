@@ -1,18 +1,28 @@
 # Patron Radio
 
 [![CI](https://github.com/ajweiss/patron-radio/actions/workflows/ci.yml/badge.svg)](https://github.com/ajweiss/patron-radio/actions/workflows/ci.yml)
+[![macOS](https://github.com/ajweiss/patron-radio/actions/workflows/macos.yml/badge.svg)](https://github.com/ajweiss/patron-radio/actions/workflows/macos.yml)
 [![Release](https://img.shields.io/github/v/release/ajweiss/patron-radio)](https://github.com/ajweiss/patron-radio/releases)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 
-Patron Radio is a native KDE Plasma 6 panel widget for streaming independent and public radio stations. It was built to scratch an itch -- there was no simple, well-integrated way to listen to internet radio directly from the Plasma panel. Rather than running a full media player for something that should be a one-click action, Patron Radio brings station streaming into the desktop as a compact quality-of-life widget.
+Patron Radio streams independent and public radio right from your desktop, as a native **KDE Plasma 6 panel widget** on Linux and a native **menu bar app on macOS**. It was built to scratch an itch -- there was no simple, well-integrated way to listen to internet radio directly from the Plasma panel. Rather than running a full media player for something that should be a one-click action, Patron Radio brings station streaming into the desktop as a compact quality-of-life widget.
 
-> **Cross-platform**: a native **macOS menu bar companion** is in development, sharing the widget's stations, loudness normalization and "Fix" tool.
+<table align="center">
+  <tr>
+    <td align="center"><img src="screenshot.png" height="440" alt="Patron Radio on KDE Plasma: the panel widget's popup playing New Sounds (WNYC)"></td>
+    <td align="center"><img src="macos/docs/screenshots/popover.png" height="440" alt="Patron Radio on macOS: the menu bar item with its popover open, playing New Sounds (WNYC)"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>KDE Plasma</b></td>
+    <td align="center"><b>macOS</b></td>
+  </tr>
+</table>
 
-![Patron Radio](screenshot.png)
+The macOS app lives in [`macos/`](macos/README.md) and shares the widget's stations, loudness normalization and "Fix" tool. See [macOS Companion](#macos-companion) below.
 
 ## Project Genesis
 
-Patron Radio started as an experiment in building production software with AI coding agents. The initial implementation was generated with **Google Gemini**, then refined and cleaned up with **Claude Code**. The goal was to see how far agent-generated code could go toward a real, shippable Plasma widget -- from C++ backend through QML UI to packaging.
+Patron Radio started as an experiment in building production software with AI coding agents. The initial implementation was generated with **Google Gemini**, then refined and cleaned up with **Claude Code**. The goal was to see how far agent-generated code could go toward a real, shippable Plasma widget -- from C++ backend through QML UI to packaging. The macOS companion was later ported from this codebase with **Claude Code**.
 
 ## Support Your Stations
 
@@ -115,9 +125,21 @@ If you prefer to build manually:
 
 After installation, add the **Patron Radio** widget to your Plasma panel or desktop via the standard "Add Widgets" menu.
 
+## macOS Companion
+
+The [`macos/`](macos/README.md) directory holds a native menu bar app for macOS 14 and later, written in Swift. It's a port of this widget: the menu bar item mirrors the panel, the popover mirrors the popup, and the settings window has the same tabs. The plumbing maps to macOS equivalents: Now Playing and media keys instead of MPRIS, a power assertion instead of the logind inhibitor, and CoreAudio for output routing.
+
+```bash
+cd macos
+scripts/build-app.sh             # → dist/Patron Radio.app
+swift test
+```
+
+See [macos/README.md](macos/README.md) for details, signing and notarization.
+
 ## Privacy
 
-Patron Radio contacts only the services needed to do its job, and only when you use the corresponding feature:
+Patron Radio (the widget and the macOS app alike) contacts only the services needed to do its job, and only when you use the corresponding feature:
 
 *   **Station stream servers** -- directly, when you play a station.
 *   **get.geojs.io** -- IP-based geolocation, used only by "Play Nearest Station" and the *Select closest local station on startup* option.

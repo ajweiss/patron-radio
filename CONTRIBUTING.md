@@ -13,14 +13,31 @@
    ```
 4. Add the widget to your panel and test manually
 
+Working on the macOS app instead? It needs macOS 14+ and Xcode 16+:
+```bash
+cd macos
+swift test
+scripts/build-app.sh && open "dist/Patron Radio.app"
+```
+
 ## Git Workflow
 
 ### Commits
 
-- **All commits must be signed.** Configure `git commit -S` or set `commit.gpgsign = true` in your git config.
-- Write commit messages in imperative mood: "Add sleep inhibit support", not "Added sleep inhibit support"
-- Keep the first line under 72 characters
-- Reference issue numbers where applicable: `Fix stream recovery after network loss (#42)`
+- **All commits must be signed.** The existing history is signed with an SSH key:
+  ```bash
+  git config gpg.format ssh
+  git config user.signingkey ~/.ssh/id_ed25519.pub   # or "key::ssh-ed25519 AAAA…" to sign via ssh-agent
+  git config commit.gpgsign true
+  ```
+  To verify signatures locally (`git log --show-signature`), list your key in an allowed-signers file:
+  `echo "you@example.com namespaces=\"git\" $(cat ~/.ssh/id_ed25519.pub)" >> ~/.config/git/allowed_signers`
+  and `git config gpg.ssh.allowedSignersFile ~/.config/git/allowed_signers`. GPG signing works too.
+- Subjects use a conventional-commit prefix: `fix:`, `feat:`, `docs:`, `test:`, `ci:`, `chore:`, `build:`, `refactor:`, with an optional scope such as `fix(ui):`, `feat(macos):` or `refactor(audio):`
+- Write the rest in imperative mood: "fix: stop the radio auto-resuming", not "fixed …"
+- Keep the first line under 72 characters; explain the *why* in a short body wrapped at about 72 columns
+- Reference issue numbers where applicable: `fix: recover the stream after network loss (#42)`
+- Agent-assisted commits end with an `Assisted-by: Claude:<model-id>` trailer (e.g. `Assisted-by: Claude:claude-opus-5`), not `Co-Authored-By`
 
 ### Branches
 
@@ -76,11 +93,23 @@
 - **Component sizing**: Keep QML files focused. If a file exceeds ~200 lines, consider extracting a sub-component.
 - **Imports**: Only import what you use. Group standard Qt imports, then KDE imports, then local imports.
 
+### Swift (macos/)
+
+- **Toolchain**: Swift 6 package (tools 6.0) compiled in Swift 5 language mode, targeting macOS 14
+- **Indentation**: 4 spaces, no tabs; opening brace on the same line
+- **Naming**: Swift API guidelines — types `PascalCase`, everything else `camelCase`
+- **Layout**: logic goes in `PatronRadioCore` (no AppKit or SwiftUI there), UI goes in `PatronRadio`
+- **State**: `@Observable` models on the main actor; the audio pipeline (`StreamSession`) runs on its own serial queue and reports back to the main queue
+- **Logging**: `NSLog("patron-radio: …")`, the same prefix as the widget
+- **Ports**: when porting a widget change, keep the behavior and the comments explaining it in sync, and say in the commit which side it came from
+
 ### Config Schema (contents/config/main.xml)
 
 - Every config entry must have a `<default>` value
 - Remove config entries that are no longer referenced — don't leave dead keys
 - JSON stored in string config entries should be valid when empty: use `[]` or `{}` as defaults
+- The macOS app mirrors these keys in `macos/Sources/PatronRadioCore/AppSettings.swift`. Add or rename them there too
+- The default station list is also the macOS app's: after editing it, run `macos/scripts/sync-stations.sh` (a macOS test fails if they drift)
 
 ## Testing
 
@@ -90,6 +119,8 @@
 cd build
 ctest --output-on-failure
 ```
+
+The macOS app's tests run with `cd macos && swift test`.
 
 Or run a specific test with verbose output:
 ```bash
@@ -115,6 +146,10 @@ Or run a specific test with verbose output:
   3. Interaction with stop/pause
   4. Destruction while the feature is active
 
+### Shared Test Vectors
+
+Rules that both the widget and the macOS app implement (HTML entity decoding in stream titles, the loudness gain policy) are written once as JSON in `tests/data/` and loaded by both test suites. When you change such a rule, change the vectors, then make both sides pass. When you add a rule that both apps implement, add a vector file rather than hard-coding the cases in one suite. See [tests/data/README.md](tests/data/README.md).
+
 ### Manual Testing Checklist
 
 Before submitting a PR that touches playback or routing:
@@ -127,6 +162,14 @@ Before submitting a PR that touches playback or routing:
 - [ ] Connect/disconnect a Bluetooth audio device while playing
 - [ ] Verify `systemd-inhibit --list` shows the lock while playing (if inhibit is enabled)
 - [ ] Open widget settings, change options, verify no crash on apply
+
+macOS app, before submitting a PR that touches playback or routing:
+
+- [ ] Play from the popover and verify the stream title in both the popover and the menu bar
+- [ ] Switch stations rapidly; use the play/pause and next/previous media keys
+- [ ] Unplug headphones (or disconnect AirPods) while playing and verify it pauses rather than switching to the speakers
+- [ ] Disconnect the network and verify it reconnects after restoring
+- [ ] Verify `pmset -g assertions` lists Patron Radio while playing (if sleep prevention is on)
 
 ## Architecture Notes
 
@@ -145,6 +188,37 @@ Key design decisions:
 - New logic should go in the appropriate extracted sub-component (`AudioRouter.qml`, `StationApi.qml`, `ContextActions.qml`), not back into `main.qml`.
 - Reconnect logic lives in `RadioBackend` (C++), not QML.
 - Tests must not depend on network access or real audio hardware.
+- The macOS app follows the same constraints: one `PlaybackState` in `RadioController` (no independent flags), reconnect logic in `RadioBackend`, and `DefaultStations.swift` is generated. Never edit it by hand.
+
+### Keeping the widget and the macOS app in sync
+
+When a widget change lands, port it to the matching Swift file (and the reverse):
+
+| Widget | macOS (`macos/Sources/…`) |
+|---|---|
+| `contents/ui/main.qml` (state machine, history, stations, tooltip text) | `PatronRadioCore/RadioController.swift` |
+| `contents/ui/AudioRouter.qml` | `RadioController.swift` ("Output routing") + `PatronRadioCore/AudioDevices.swift` |
+| `contents/ui/StationApi.qml` (Fix, nearest station) | `RadioController.swift` + `RadioBrowser`/`Geo` in `PatronRadioCore/Helpers.swift` |
+| `contents/ui/ContextActions.qml` | `MenuModel` in `PatronRadio/Components.swift` |
+| `contents/ui/FullRepresentation.qml` | `PatronRadio/PopoverView.swift` |
+| `contents/ui/CompactRepresentation.qml`, `RadioToolTip.qml` | `PatronRadio/StatusItemController.swift` |
+| `contents/ui/config*.qml` | `PatronRadio/SettingsView.swift` |
+| `contents/config/main.xml` keys | `PatronRadioCore/AppSettings.swift` (same key names) |
+| `main.xml` default stations | `PatronRadioCore/DefaultStations.swift`, generated by `macos/scripts/sync-stations.sh` |
+| `src/radiobackend.cpp` (reconnect, stall watchdog, loudness, sleep lock) | `PatronRadioCore/RadioBackend.swift` + `Loudness.swift` |
+| `src/icystreamreader.cpp` | `PatronRadioCore/IcyParser.swift` (demux, entities) + `StreamSession.swift` (network, decode, output) |
+| MPRIS adaptor | `PatronRadio/NowPlaying.swift` |
+
+There's no macOS counterpart to the cross-instance sync bus (`sharedStations`/`sharedSettings`): the app is a
+single process. Deliberate behavior differences are listed in `macos/README.md`. Keep them deliberate.
+
+Two upkeep rules:
+
+- The macOS CI workflow (`.github/workflows/macos.yml`) only runs when `macos/`, `tests/data/`,
+  `contents/config/main.xml` or the workflow itself changes. If the app starts depending on another file,
+  add it to the `paths` filter, or CI will silently stop covering it.
+- README screenshots in `macos/docs/screenshots/` are real screen captures (offscreen renders can't show the
+  real menu bar or popover chrome). Refresh them after any visible UI change.
 
 ### Things to Avoid
 

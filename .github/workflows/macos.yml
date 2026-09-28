@@ -1,0 +1,37 @@
+name: macOS
+
+# Nothing outside these paths can affect the outcome, so this only runs
+# when something the macOS app builds or tests against changes: the app
+# itself, the shared test vectors, or the widget's station list (which the
+# app's default stations are generated from and checked against).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'macos/**'
+      - 'tests/data/**'
+      - 'contents/config/main.xml'
+      - '.github/workflows/macos.yml'
+  pull_request:
+    paths:
+      - 'macos/**'
+      - 'tests/data/**'
+      - 'contents/config/main.xml'
+      - '.github/workflows/macos.yml'
+
+jobs:
+  build-and-test:
+    # The menu bar companion in macos/ (Swift 6 package, macOS 14+).
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: macos
+    steps:
+      - name: Check out
+        uses: actions/checkout@v5
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test

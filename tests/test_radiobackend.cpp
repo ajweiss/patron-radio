@@ -4,6 +4,7 @@
 #include <cmath>
 #include <limits>
 #include "../src/radiobackend.h"
+#include "sharedvectors.h"
 
 // Helpers
 // .invalid is reserved (RFC 2606) and never resolves, so tests exercise the
@@ -506,24 +507,31 @@ private Q_SLOTS:
         b.SetRate(2.0);
     }
 
+    // Gain cases live in tests/data/loudness_gain.json, shared with the
+    // macOS app's tests so both normalizers apply the same policy.
+    void testLoudnessGain_data()
+    {
+        QTest::addColumn<double>("measured");
+        QTest::addColumn<double>("target");
+        QTest::addColumn<double>("gain");
+
+        const QJsonArray cases = loadSharedCases(QStringLiteral("loudness_gain.json"));
+        QVERIFY2(!cases.isEmpty(), "tests/data/loudness_gain.json is missing or empty");
+        for (const QJsonValue &value : cases) {
+            const QJsonObject c = value.toObject();
+            QTest::newRow(qPrintable(c.value(QLatin1String("name")).toString()))
+                << c.value(QLatin1String("measured")).toDouble()
+                << c.value(QLatin1String("target")).toDouble()
+                << c.value(QLatin1String("gain")).toDouble();
+        }
+    }
+
     void testLoudnessGain()
     {
-        const double target = -18.0;
-
-        // Louder than target -> attenuate by the difference.
-        QCOMPARE(RadioBackend::attenuationGainDb(-12.0, target), -6.0);  // -18 - (-12)
-        QCOMPARE(RadioBackend::attenuationGainDb(-8.0, target), -10.0);
-
-        // Exactly at target -> no change.
-        QCOMPARE(RadioBackend::attenuationGainDb(target, target), 0.0);
-
-        // Quieter than target -> never boost (attenuation only).
-        QCOMPARE(RadioBackend::attenuationGainDb(-24.0, target), 0.0);
-        QCOMPARE(RadioBackend::attenuationGainDb(-40.0, target), 0.0);
-
-        // Very loud -> clamped to the max attenuation (24 dB).
-        QCOMPARE(RadioBackend::attenuationGainDb(0.0, target), -18.0);
-        QCOMPARE(RadioBackend::attenuationGainDb(12.0, target), -24.0); // would be -30, clamped
+        QFETCH(double, measured);
+        QFETCH(double, target);
+        QFETCH(double, gain);
+        QCOMPARE(RadioBackend::attenuationGainDb(measured, target), gain);
     }
 
     void testLoudnessMeasurable()

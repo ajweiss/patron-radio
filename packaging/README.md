@@ -8,7 +8,8 @@ package can build.
 
 1. Bump the version in `CMakeLists.txt` (`project(PatronRadio VERSION X.Y)`)
    and `metadata.json` (`"Version"`), and in `aur/PKGBUILD` (`pkgver`) and
-   `fedora/patron-radio.spec` (`Version:` + a new `%changelog` entry).
+   `fedora/patron-radio.spec` (`Version:` + a new `%changelog` entry), and
+   `macos/Resources/Info.plist` (`CFBundleShortVersionString`).
 2. Commit, then tag and push:
    ```bash
    git tag -s vX.Y -m "Patron Radio X.Y"
@@ -70,3 +71,10 @@ sudo dnf copr enable <copr-user>/patron-radio && sudo dnf install patron-radio
 openSUSE (OBS) and Debian/Ubuntu packaging are still to do. The Fedora spec
 is a reasonable starting point for an OBS RPM; Debian needs a `debian/`
 directory (control/rules/changelog).
+
+## macOS
+
+The macOS companion app isn't packaged through the AUR or COPR. Build a
+signed, notarized `Patron Radio.app` from `macos/` as described in
+[macos/README.md](../macos/README.md#build--run) and attach it to the
+GitHub release.
