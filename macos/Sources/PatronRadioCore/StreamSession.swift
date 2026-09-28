@@ -36,6 +36,9 @@ final class StreamSession: NSObject, URLSessionDataDelegate, @unchecked Sendable
     private var urlSession: URLSession?
     private var demuxer = IcyDemuxer(metaIntHeader: nil)
     private var cancelled = false
+    /// A fatal error was emitted: the download is cancelled and no further
+    /// events flow, but resources stay allocated until the owner calls stop().
+    private var failed = false
     private var streamFinished = false
 
     // Parsing / decoding
@@ -137,9 +140,11 @@ final class StreamSession: NSObject, URLSessionDataDelegate, @unchecked Sendable
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
                     newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
         // Validate every hop: the initial check only covers the first URL, and a
-        // redirect could point at an internal host. Never downgrade https → http.
+        // redirect could point at an internal host. Never downgrade https → http,
+        // judged against the current hop (not the original request), so a chain
+        // that has upgraded to https can't be bounced back to plaintext.
         guard let target = request.url, !URLPolicy.isDisallowedStreamURL(target),
-              !(task.originalRequest?.url?.scheme?.lowercased() == "https" && target.scheme?.lowercased() == "http")
+              !(task.currentRequest?.url?.scheme?.lowercased() == "https" && target.scheme?.lowercased() == "http")
         else {
             completionHandler(nil)
             fail("Refused a redirect to a non-routable or less secure host")
@@ -150,7 +155,7 @@ final class StreamSession: NSObject, URLSessionDataDelegate, @unchecked Sendable
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse,
                     completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
-        guard !cancelled else { completionHandler(.cancel); return }
+        guard !cancelled, !failed else { completionHandler(.cancel); return }
         if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
             completionHandler(.cancel)
             fail("Server returned HTTP \(http.statusCode)")
@@ -172,14 +177,14 @@ final class StreamSession: NSObject, URLSessionDataDelegate, @unchecked Sendable
     }
 
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive data: Data) {
-        guard !cancelled else { return }
+        guard !cancelled, !failed else { return }
         let out = demuxer.consume(data)
         for t in out.titles { emit(.title(t)) }
         if !out.audio.isEmpty { parse(out.audio) }
     }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
-        guard !cancelled else { return }
+        guard !cancelled, !failed else { return }
         streamFinished = true
         if let error = error as NSError? {
             if error.domain == NSURLErrorDomain && error.code == NSURLErrorCancelled { return }
@@ -473,8 +478,16 @@ final class StreamSession: NSObject, URLSessionDataDelegate, @unchecked Sendable
     // MARK: - Events
 
     private func fail(_ message: String) {
-        guard !cancelled else { return }
+        guard !cancelled, !failed else { return }
+        failed = true
         NSLog("patron-radio: stream error (\(url.absoluteString)): \(message)")
+        // A failure is terminal: cancel the download and go quiet, so a still-
+        // flowing stream can't keep buffering or re-emit .failed while the
+        // owner's reconnect logic gets around to stop(). Resource teardown
+        // stays in stop() — fail() can run inside an AudioFileStream callback,
+        // where closing the parser wouldn't be safe.
+        urlSession?.invalidateAndCancel()
+        urlSession = nil
         emit(.failed(message))
     }
 
