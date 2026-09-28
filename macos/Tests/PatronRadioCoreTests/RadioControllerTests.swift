@@ -300,6 +300,35 @@ struct RadioControllerTests {
         #expect(Station.decodeList(settings.stationsJSON)?[0].url == "https://new.kexp/stream")
     }
 
+    @Test func fixTargetsTheStationItStartedOn() async {
+        let json = #"[{"codec":"MP3","url":"https://new.kexp/stream"}]"#
+        let c = make(fetch: (Data(json.utf8), 200))
+        c.togglePlay() // KEXP, index 0
+        backend.fail("gone")
+        c.fixCurrentStream()
+        // Reorder while the search is in flight: KEXP moves to the end.
+        var reordered = c.stations
+        reordered.append(reordered.removeFirst())
+        c.setStations(reordered)
+        await waitUntil { c.playbackState != .fixing }
+        #expect(c.stations.last?.url == "https://new.kexp/stream")
+        #expect(c.stations.first?.url == "https://wfmu/stream") // untouched
+        #expect(c.currentStation?.url == "https://new.kexp/stream")
+        #expect(backend.currentURL == "https://new.kexp/stream")
+    }
+
+    @Test func fixBailsOutWhenTheStationIsDeleted() async {
+        let json = #"[{"codec":"MP3","url":"https://new.kexp/stream"}]"#
+        let c = make(fetch: (Data(json.utf8), 200))
+        c.togglePlay() // KEXP, index 0
+        backend.fail("gone")
+        c.fixCurrentStream()
+        c.setStations(Array(c.stations.dropFirst())) // delete KEXP mid-search
+        await waitUntil { c.playbackState != .fixing }
+        #expect(c.playbackState == .broken)
+        #expect(!c.stations.contains { $0.url == "https://new.kexp/stream" })
+    }
+
     @Test func fixFailureStaysBroken() async {
         let c = make(fetch: (Data("[]".utf8), 200))
         c.togglePlay()

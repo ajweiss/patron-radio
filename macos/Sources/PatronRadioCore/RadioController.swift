@@ -323,7 +323,10 @@ public final class RadioController {
         guard playbackState != .fixing, hasCurrentStation, let url = RadioBrowser.searchURL(for: currentStationName) else { return }
         playbackState = .fixing
         currentTrack = "Searching for new stream..."
-        let index = currentStationIndex
+        // The list can be edited while the search is in flight, so remember the
+        // station itself, not its index (the id survives reorders; the URL
+        // survives an import round-trip, which regenerates ids).
+        let target = stations[currentStationIndex]
         let fetch = self.fetch
         Task { @MainActor in
             do {
@@ -336,7 +339,11 @@ public final class RadioController {
                     fixFailed("Could not find a working replacement stream.")
                     return
                 }
-                guard stations.indices.contains(index) else { return }
+                guard let index = stations.firstIndex(where: { $0.id == target.id })
+                        ?? stations.firstIndex(where: { $0.url == target.url }) else {
+                    fixFailed("The station was removed while searching.")
+                    return
+                }
                 stations[index].url = found
                 stations[index].loudness = nil // new stream → old loudness no longer applies
                 currentStationIndex = index
