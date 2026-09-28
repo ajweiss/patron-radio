@@ -85,8 +85,12 @@ the network or audio hardware.
 The screenshots above are real screen captures (Screenshot.app, dark appearance), cropped to the menu bar item
 and popover or to the Settings window, and saved in `docs/screenshots/`.
 
-Headless visual check (debug builds only): `swift run PatronRadio --snapshots /tmp/snaps` renders the popover,
-menu bar item and every settings tab to PNGs.
+Headless visual check (debug builds only): `swift run PatronRadio --snapshots /tmp/snaps [--light|--dark]`
+renders the popover, menu bar item and every settings tab to PNGs, plus `real-popover.png` and
+`real-button.png` captured from the actual popover and status item windows. Trust the `real-*` captures:
+offscreen renders lack menu bar vibrancy and have hidden real bugs. Snapshot mode starts real playback (it
+needs the network), and the unbundled debug binary keeps its settings in a separate `PatronRadio` defaults
+domain (`defaults delete PatronRadio` to reset).
 
 ## Layout
 
@@ -109,6 +113,21 @@ source of truth. After changing that list, run `scripts/sync-stations.sh`; a tes
 
 Rules both apps must agree on (HTML entity decoding in stream titles, the loudness gain policy) are written
 once as test vectors in [`../tests/data/`](../tests/data/README.md) and loaded by both test suites.
+
+## UI implementation notes
+
+Menu bar and popover pitfalls, all explained where they bite in code comments:
+
+- Don't use hierarchical styles (`.secondary`, `.opacity` on text) inside clipped layers on the menu bar or
+  popover. Vibrancy blending makes the text vanish. Pass concrete colors, as `Marquee` does.
+- The status item is 21–22 pt tall. Its two-line label is drawn by an AppKit view (`StatusLabelView`), not
+  SwiftUI, so baselines, the state glyph and the scroll offset land on whole pixels. SwiftUI placed those tiny
+  fonts at fractional baselines, which looked blurry on 1x displays. Keep its font sizes whole points.
+- The status item's width comes only from `statusItem.length`, and long titles scroll inside it.
+  In SwiftUI (the popover), `Marquee` reports zero ideal width for the same reason.
+- Give the popover its fixed size before `show`, and keep `sizingOptions = []` on its hosting controller.
+  Letting SwiftUI resize it after showing re-anchors it off the top of the screen.
+- The app's settings type is `AppSettings`, because `Settings` collides with SwiftUI's scene type.
 
 ## Privacy
 
