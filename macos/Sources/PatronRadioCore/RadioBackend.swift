@@ -110,6 +110,15 @@ public final class RadioBackend: RadioBackendProtocol {
         }
     }
 
+    deinit {
+        // The main run loop retains scheduled timers, so a dropped backend
+        // would otherwise keep its repeating loudness tick firing forever.
+        // Moot for the app's singleton backend, but per-test instances leak.
+        loudnessTimer?.invalidate()
+        reconnectTimer?.invalidate()
+        stallTimer?.invalidate()
+    }
+
     // MARK: - Transport
 
     public func setCurrentURL(_ url: String) {
